@@ -20,6 +20,8 @@ Environment variables:
 export BLITZREELS_API_KEY="br_live_xxxxx"
 # Optional: override API base URL (defaults to https://blitzreels.com/api/v1)
 export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
+# Safety: required to call expensive endpoints like /faceless and /export with the helper script
+export BLITZREELS_ALLOW_EXPENSIVE=1
 ```
 
 Get your API key from: https://blitzreels.com/settings/api

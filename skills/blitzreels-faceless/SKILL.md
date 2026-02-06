@@ -18,6 +18,8 @@ This skill is focused on the faceless generation flow:
 ```bash
 export BLITZREELS_API_KEY="br_live_xxxxx"
 export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
+# Safety: required to call /faceless and /export with the helper script
+export BLITZREELS_ALLOW_EXPENSIVE=1
 ```
 
 ## Full API Reference (OpenAPI)
