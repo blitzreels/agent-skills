@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${BLITZREELS_API_BASE_URL:-https://blitzreels.com/api/v1}"
+BASE_URL="${BLITZREELS_API_BASE_URL:-https://www.blitzreels.com/api/v1}"
 API_KEY="${BLITZREELS_API_KEY:-}"
 
 if [[ -z "$API_KEY" ]]; then

@@ -20,19 +20,19 @@ Because these endpoints evolve, use the OpenAPI spec as the source of truth for 
 
 ```bash
 export BLITZREELS_API_KEY="br_live_xxxxx"
-export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
+export BLITZREELS_API_BASE_URL="https://www.blitzreels.com/api/v1"
 # Safety: required to call expensive endpoints like /faceless and /export with the helper script
 export BLITZREELS_ALLOW_EXPENSIVE=1
 ```
 
 ## Full API Reference (OpenAPI)
 
-- `https://blitzreels.com/api/openapi.json`
+- `https://www.blitzreels.com/api/openapi.json`
 
 List endpoints related to editing (requires `jq`):
 
 ```bash
-curl -sS https://blitzreels.com/api/openapi.json \
+curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
   | grep -Ei '(timeline|overlay|keyframe|template|background|caption|style)' || true
 ```
@@ -57,3 +57,4 @@ bash scripts/blitzreels.sh POST /projects '{"name":"Motion Graphics Test","aspec
 
 - Use `include=directives` on OpenAPI-documented endpoints (when available) to get agent-friendly sequencing guidance.
 - When you need to animate, prefer the smallest number of keyframes that still communicates the motion (reduces jitter).
+- Use `https://www.blitzreels.com/api/v1` as your base URL. `https://blitzreels.com` redirects to `www`, and some HTTP clients drop the `Authorization` header on redirects (leading to confusing `UNAUTHORIZED` errors).

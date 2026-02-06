@@ -2,18 +2,18 @@
 
 The BlitzReels API is public and described by OpenAPI:
 
-- `https://blitzreels.com/api/openapi.json`
+- `https://www.blitzreels.com/api/openapi.json`
 
 ## List All Endpoints
 
 ```bash
-curl -sS https://blitzreels.com/api/openapi.json | jq -r '.paths | keys[]'
+curl -sS https://www.blitzreels.com/api/openapi.json | jq -r '.paths | keys[]'
 ```
 
 ## List Methods + Paths + Summaries
 
 ```bash
-curl -sS https://blitzreels.com/api/openapi.json | jq -r '
+curl -sS https://www.blitzreels.com/api/openapi.json | jq -r '
   .paths
   | to_entries[]
   | .key as $path
@@ -27,7 +27,7 @@ curl -sS https://blitzreels.com/api/openapi.json | jq -r '
 ## Find The Right Endpoint
 
 ```bash
-curl -sS https://blitzreels.com/api/openapi.json \
+curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
   | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job' || true
 ```
@@ -36,7 +36,6 @@ curl -sS https://blitzreels.com/api/openapi.json \
 
 ```bash
 PATH_TO_INSPECT="/projects/{id}/faceless"
-curl -sS https://blitzreels.com/api/openapi.json \
+curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq --arg p "$PATH_TO_INSPECT" '.paths[$p]'
 ```
-
