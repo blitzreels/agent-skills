@@ -4,7 +4,9 @@ Agent Skills are packaged instructions and helper scripts that extend AI coding 
 
 ## Skills
 
-- `blitzreels` - Use the BlitzReels REST API to create projects, generate faceless videos, add captions, and export.
+- `blitzreels` - BlitzReels API umbrella skill (full API entrypoint, discovery, auth, OpenAPI link).
+- `blitzreels-faceless` - Faceless video generation workflows (voices, visual styles, jobs, exports).
+- `blitzreels-motion-graphics` - Editing + motion graphics workflows (timeline/overlays/templates/export; uses OpenAPI to discover exact endpoints).
 
 ## Installation
 

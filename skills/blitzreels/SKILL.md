@@ -1,11 +1,16 @@
 ---
 name: blitzreels
-description: Use the BlitzReels REST API to create projects, generate faceless videos, add captions, and export videos.
+description: BlitzReels API umbrella skill: auth, discovery, and links to specialized BlitzReels skills.
 ---
 
 # BlitzReels Skill
 
-Create and export videos via the BlitzReels API.
+Use the BlitzReels API to create and edit video projects programmatically.
+
+For focused workflows, install the specialized skills in this repo:
+
+- `blitzreels-faceless` (faceless video generation)
+- `blitzreels-motion-graphics` (timeline/overlays/templates/export)
 
 ## Setup
 
@@ -19,6 +24,18 @@ export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
 
 Get your API key from: https://blitzreels.com/settings/api
 
+## Full API Reference (OpenAPI)
+
+The full API is documented in OpenAPI:
+
+- `https://blitzreels.com/api/openapi.json`
+
+Quickly list available endpoints locally (requires `jq`):
+
+```bash
+curl -sS https://blitzreels.com/api/openapi.json | jq -r '.paths | keys[]'
+```
+
 ## Recommended Usage (Scripted)
 
 This skill includes a helper script so you don't have to retype headers:
@@ -30,25 +47,13 @@ bash scripts/blitzreels.sh POST /projects '{"name":"My Video","aspect_ratio":"9:
 
 ## Commands
 
-Create a faceless video:
+Create a project:
 
 ```bash
-# Create project
 curl -X POST https://blitzreels.com/api/v1/projects \
   -H "Authorization: Bearer $BLITZREELS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "My Video", "aspect_ratio": "9:16"}'
-
-# Then generate faceless video
-curl -X POST https://blitzreels.com/api/v1/projects/{project_id}/faceless \
-  -H "Authorization: Bearer $BLITZREELS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "topic": "5 productivity tips",
-    "voice_id": "voice_nova",
-    "visual_style": "cinematic",
-    "duration_seconds": 30
-  }'
 ```
 
 Check job status:
@@ -58,7 +63,7 @@ curl https://blitzreels.com/api/v1/jobs/{job_id} \
   -H "Authorization: Bearer $BLITZREELS_API_KEY"
 ```
 
-Export video:
+Export a project:
 
 ```bash
 curl -X POST https://blitzreels.com/api/v1/projects/{project_id}/export \
@@ -81,13 +86,11 @@ curl https://blitzreels.com/api/v1/styles \
   -H "Authorization: Bearer $BLITZREELS_API_KEY"
 ```
 
-## Workflow Example
+## What This Skill Does (Today)
 
-1. Create project
-2. Generate faceless video (returns job_id)
-3. Poll job status until complete
-4. Export project
-5. Get download URL
+- Provides a generic `scripts/blitzreels.sh` wrapper for authenticated API calls.
+- Documents auth, base URL, and how to discover the full API via OpenAPI.
+- Points to specialized skills for faceless generation and editing/motion graphics workflows.
 
 ## Rate Limits
 
