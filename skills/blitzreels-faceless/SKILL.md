@@ -24,6 +24,14 @@ export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
 
 - `https://blitzreels.com/api/openapi.json`
 
+Browse relevant endpoints:
+
+```bash
+curl -sS https://blitzreels.com/api/openapi.json \
+  | jq -r '.paths | keys[]' \
+  | grep -iE 'faceless|voice|visual|caption|export|job' || true
+```
+
 ## Quickstart (Using The Helper Script)
 
 ```bash
@@ -63,4 +71,3 @@ bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/export" '{"resolution":
 
 - Prefer passing either `topic` or a fully written `script`. If both are present, the API may prioritize one depending on the endpoint.
 - Use the OpenAPI spec to confirm which fields are supported for your account and current API version.
-

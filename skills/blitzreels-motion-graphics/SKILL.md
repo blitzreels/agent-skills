@@ -30,7 +30,9 @@ export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
 List endpoints related to editing (requires `jq`):
 
 ```bash
-curl -sS https://blitzreels.com/api/openapi.json \\\n+  | jq -r '.paths | keys[]' \\\n+  | grep -Ei '(timeline|overlay|keyframe|template|background|caption|style)' || true
+curl -sS https://blitzreels.com/api/openapi.json \
+  | jq -r '.paths | keys[]' \
+  | grep -Ei '(timeline|overlay|keyframe|template|background|caption|style)' || true
 ```
 
 ## Recommended Flow
@@ -53,4 +55,3 @@ bash scripts/blitzreels.sh POST /projects '{"name":"Motion Graphics Test","aspec
 
 - Use `include=directives` on OpenAPI-documented endpoints (when available) to get agent-friendly sequencing guidance.
 - When you need to animate, prefer the smallest number of keyframes that still communicates the motion (reduces jitter).
-

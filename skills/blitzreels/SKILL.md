@@ -24,16 +24,56 @@ export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
 
 Get your API key from: https://blitzreels.com/settings/api
 
+## Agent Playbook (Browse Then Call)
+
+When integrating with BlitzReels, do not guess endpoints or request fields. Use OpenAPI as the source of truth:
+
+1. Fetch OpenAPI: `https://blitzreels.com/api/openapi.json`
+2. Search for the endpoint you need by keyword (path, tag, summary)
+3. Inspect request/response schema for required fields
+4. Call the endpoint with `Authorization: Bearer $BLITZREELS_API_KEY`
+5. If the operation returns a `job_id`, poll `/jobs/{job_id}` until complete (or use webhooks)
+
 ## Full API Reference (OpenAPI)
 
 The full API is documented in OpenAPI:
 
 - `https://blitzreels.com/api/openapi.json`
 
-Quickly list available endpoints locally (requires `jq`):
+Quickly list available endpoints (requires `jq`):
 
 ```bash
 curl -sS https://blitzreels.com/api/openapi.json | jq -r '.paths | keys[]'
+```
+
+List methods + paths + summary:
+
+```bash
+curl -sS https://blitzreels.com/api/openapi.json | jq -r '
+  .paths
+  | to_entries[]
+  | .key as $path
+  | .value
+  | to_entries[]
+  | select(.key | test(\"^(get|post|put|patch|delete)$\"))
+  | \"\\(.key|ascii_upcase) \\($path) - \\(.value.summary // .value.operationId // \"\")\"
+'
+```
+
+Search by keyword:
+
+```bash
+curl -sS https://blitzreels.com/api/openapi.json \
+  | jq -r '.paths | keys[]' \
+  | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job' || true
+```
+
+Inspect one endpoint in detail:
+
+```bash
+PATH_TO_INSPECT="/projects/{id}/export"
+curl -sS https://blitzreels.com/api/openapi.json \
+  | jq --arg p "$PATH_TO_INSPECT" '.paths[$p]'
 ```
 
 ## Recommended Usage (Scripted)
@@ -89,7 +129,7 @@ curl https://blitzreels.com/api/v1/styles \
 ## What This Skill Does (Today)
 
 - Provides a generic `scripts/blitzreels.sh` wrapper for authenticated API calls.
-- Documents auth, base URL, and how to discover the full API via OpenAPI.
+- Documents that BlitzReels has a public API, plus how to discover the full surface area via OpenAPI.
 - Points to specialized skills for faceless generation and editing/motion graphics workflows.
 
 ## Rate Limits
