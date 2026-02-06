@@ -1,6 +1,6 @@
 ---
 name: blitzreels-faceless
-description: Faceless video generation workflows with BlitzReels (voices, visual styles, jobs, exports).
+description: Faceless AI video generation workflows with BlitzReels (voices, visual styles, jobs, exports).
 ---
 
 # BlitzReels Faceless Video Skill

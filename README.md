@@ -1,10 +1,12 @@
 # BlitzReels Agent Skills
 
-Agent Skills are packaged instructions and helper scripts that extend AI coding agents (Codex, Claude Code, Cursor, etc.).
+BlitzReels is an AI video generation + editing platform with a public REST API.
+
+This repo packages “Agent Skills” (instructions + helper scripts) for AI coding agents (Codex, Claude Code, Cursor, etc.) so agents can discover the API, browse the OpenAPI spec, and call the right endpoints.
 
 ## Skills
 
-- `blitzreels` - BlitzReels API umbrella skill (full API entrypoint, discovery, auth, OpenAPI link).
+- `blitzreels` - BlitzReels API umbrella skill (AI video generation API entrypoint, discovery, auth, OpenAPI link).
 - `blitzreels-faceless` - Faceless video generation workflows (voices, visual styles, jobs, exports).
 - `blitzreels-motion-graphics` - Editing + motion graphics workflows (timeline/overlays/templates/export; uses OpenAPI to discover exact endpoints).
 

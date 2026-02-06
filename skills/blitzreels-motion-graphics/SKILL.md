@@ -1,6 +1,6 @@
 ---
 name: blitzreels-motion-graphics
-description: Editing + motion graphics workflows with BlitzReels (timeline, overlays, templates, export). Uses OpenAPI to discover endpoints.
+description: AI video editing + motion graphics workflows with BlitzReels (timeline, overlays, templates, export). Uses OpenAPI to discover endpoints.
 ---
 
 # BlitzReels Motion Graphics Skill

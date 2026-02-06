@@ -1,6 +1,6 @@
 ---
 name: blitzreels
-description: BlitzReels API umbrella skill: auth, discovery, and links to specialized BlitzReels skills.
+description: BlitzReels AI video generation API umbrella skill: auth, OpenAPI browsing, and links to specialized BlitzReels skills.
 ---
 
 # BlitzReels Skill
