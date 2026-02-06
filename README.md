@@ -4,6 +4,12 @@ BlitzReels is an AI video generation + editing platform with a public REST API.
 
 This repo packages “Agent Skills” (instructions + helper scripts) for AI coding agents (Codex, Claude Code, Cursor, etc.) so agents can discover the API, browse the OpenAPI spec, and call the right endpoints.
 
+## LLM Resources (On blitzreels.com)
+
+- `https://blitzreels.com/llms.txt` (concise)
+- `https://blitzreels.com/llms-full.txt` (expanded)
+- `https://blitzreels.com/api/openapi.json` (canonical API contract)
+
 ## Skills
 
 - `blitzreels` - BlitzReels API umbrella skill (AI video generation API entrypoint, discovery, auth, OpenAPI link).

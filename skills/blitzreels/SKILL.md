@@ -24,6 +24,12 @@ export BLITZREELS_API_BASE_URL="https://blitzreels.com/api/v1"
 
 Get your API key from: https://blitzreels.com/settings/api
 
+## LLM Resources
+
+- `https://blitzreels.com/llms.txt`
+- `https://blitzreels.com/llms-full.txt`
+- `https://blitzreels.com/api/openapi.json` (source of truth)
+
 ## Agent Playbook (Browse Then Call)
 
 When integrating with BlitzReels, do not guess endpoints or request fields. Use OpenAPI as the source of truth:
