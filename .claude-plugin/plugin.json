@@ -1,0 +1,13 @@
+{
+  "name": "blitzreels",
+  "version": "1.0.0",
+  "description": "BlitzReels AI video editing API skills — faceless generation, motion graphics, and video editing workflows.",
+  "author": {
+    "name": "BlitzReels",
+    "url": "https://blitzreels.com"
+  },
+  "homepage": "https://blitzreels.com",
+  "repository": "https://github.com/blitzreels/agent-skills",
+  "license": "MIT",
+  "keywords": ["video", "editing", "ai", "captions", "motion-graphics", "faceless", "blitzreels"]
+}
