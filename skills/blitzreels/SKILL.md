@@ -7,10 +7,11 @@ description: BlitzReels AI video generation API umbrella skill: auth, OpenAPI br
 
 Use the BlitzReels API to create and edit video projects programmatically.
 
-For focused workflows, install the specialized skills in this repo:
+For focused workflows, install the specialized skills:
 
-- `blitzreels-faceless` (faceless video generation)
-- `blitzreels-motion-graphics` (timeline/overlays/templates/export)
+- **`blitzreels-faceless`** — Faceless video generation: topic/script → AI scenes → voiceover → export. Includes `faceless.sh` pipeline script, voice & visual style references.
+- **`blitzreels-motion-graphics`** — Motion graphics via the Playground API: create compositions with text, shapes, charts, code, animations. Includes `playground.sh` CRUD script, composition spec reference.
+- **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
 
 ## Setup
 
@@ -63,8 +64,8 @@ curl -sS https://www.blitzreels.com/api/openapi.json | jq -r '
   | .key as $path
   | .value
   | to_entries[]
-  | select(.key | test(\"^(get|post|put|patch|delete)$\"))
-  | \"\\(.key|ascii_upcase) \\($path) - \\(.value.summary // .value.operationId // \"\")\"
+  | select(.key | test("^(get|post|put|patch|delete)$"))
+  | "\(.key|ascii_upcase) \($path) - \(.value.summary // .value.operationId // "")"
 '
 ```
 
@@ -73,7 +74,7 @@ Search by keyword:
 ```bash
 curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
-  | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job' || true
+  | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job|playground' || true
 ```
 
 Inspect one endpoint in detail:
@@ -133,12 +134,6 @@ List caption styles:
 curl https://www.blitzreels.com/api/v1/styles \
   -H "Authorization: Bearer $BLITZREELS_API_KEY"
 ```
-
-## What This Skill Does (Today)
-
-- Provides a generic `scripts/blitzreels.sh` wrapper for authenticated API calls.
-- Documents that BlitzReels has a public API, plus how to discover the full surface area via OpenAPI.
-- Points to specialized skills for faceless generation and editing/motion graphics workflows.
 
 ## Redirect Warning (Auth Headers)
 
