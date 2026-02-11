@@ -1,4 +1,4 @@
-# BlitzReels Agent Skills
+# BlitzReels Agent Skills for TikTok & Instagram Clipping and Captioning
 
 <p align="center">
   <img src="./assets/meta-image.jpg" alt="BlitzReels - Professional videos in just 3 clicks" />
@@ -28,7 +28,7 @@ BlitzReels combines an end-user video editor and a developer-first API:
 - API docs: https://blitzreels.com/docs
 - OpenAPI spec: https://blitzreels.com/api/openapi.json
 
-## SEO Use Cases (What BlitzReels Helps You Build)
+## TikTok and Instagram Clipping & Captioning Workflows
 
 - **TikTok clipping tool**: turn long-form videos into short, publish-ready clips.
 - **Instagram clipping tool**: repurpose podcasts, streams, and courses into Reels.
