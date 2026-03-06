@@ -2,6 +2,8 @@
 
 Use this reference when the user wants to turn long-form video into short-form clips with captions and export.
 
+Important: the current public API does not expose a single one-shot clipping endpoint. The workflow is orchestrated from existing ingest, transcript, suggestion, timeline, caption, and export endpoints.
+
 ## What Good Looks Like
 
 - transcript exists and has non-zero words
@@ -135,6 +137,17 @@ Use this priority order:
 ### YouTube import gives media but no shorts
 
 Treat YouTube workspace import as ingest-only until transcript and suggestions are confirmed.
+
+### User expects a one-shot clipping endpoint
+
+Meaning:
+- the user expects one request to ingest, transcribe, suggest, clip, caption, and export
+- the current API does not provide that shape
+
+Recovery:
+- explain that clipping is currently a multi-step orchestration
+- use the endpoint index stages in order
+- only describe a one-shot route as a future product improvement, not as existing API behavior
 
 ## QA Checklist
 

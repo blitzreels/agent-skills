@@ -9,6 +9,8 @@ Use this skill when the task is specifically "long video to short clips".
 
 This skill should prefer smart-cropped vertical video and clip-window-aware captions whenever the product supports them.
 
+Current API shape: clipping is a multi-step workflow built from existing ingest, transcript, suggestion, timeline, caption, and export endpoints. There is no dedicated one-shot clipping endpoint yet.
+
 ## Default Path
 
 1. Create a `9:16` project if the user needs a final exported short.
@@ -30,6 +32,7 @@ This skill should prefer smart-cropped vertical video and clip-window-aware capt
 - Do not trust a single duration field blindly. Cross-check suggestion timing, transcript timing, and timeline context.
 - Do not assume `auto_suggest_shorts=true` means suggestions are ready immediately.
 - Do not export before caption items exist on the project timeline.
+- Do not imply that the public API has a single endpoint that takes a YouTube URL and fully completes clipping in one request.
 - Prefer a clipping path that uses a smart-cropped derived asset or ROI-aware reframing over a static `fullscreen` crop.
 - Captions must be clip-window-aware. Do not attach the full asset transcript to a trimmed clip.
 - If the public API cannot apply a suggestion with smart crop plus clip-window captions, fall back to the stronger internal project-clipping path or reconstruct that behavior manually.
