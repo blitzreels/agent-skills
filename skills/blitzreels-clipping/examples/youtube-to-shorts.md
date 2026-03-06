@@ -2,6 +2,8 @@
 
 Use this pattern when the user gives you a YouTube URL and wants one or more short vertical clips.
 
+This is an orchestration example, not a single one-shot API call.
+
 ## Goal
 
 - ingest the YouTube source
