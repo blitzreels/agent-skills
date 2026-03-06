@@ -13,15 +13,27 @@ Use this pattern when the user gives you a YouTube URL and wants one or more sho
 
 ## Example Flow
 
-1. Import the YouTube video into workspace media.
-2. Poll the asset until transcript and short suggestions are both ready.
+1. Ingest stage:
+   - use `POST /workspace/media/import/youtube`
+2. Readiness stage:
+   - poll `GET /workspace/media/assets/{assetId}`
+   - confirm transcript with `GET /projects/{id}/transcript` when working from a project-bound path
+   - confirm suggestions with `GET /workspace/media/assets/{assetId}/short-suggestions`
 3. Pick the strongest short suggestion based on hook quality and timing.
-4. Apply the suggestion through the best available path:
+4. Apply stage:
+   - prefer `POST /workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply`
    - prefer a derived vertical smart-crop asset
    - otherwise use ROI-aware reframing or camera-plan motion
    - avoid static center crop unless there is no better option
-5. Insert captions only for the selected clip window.
-6. Export and verify:
+   - fallback to `POST /projects/{id}/timeline/media` plus `POST /projects/{id}/timeline/trim` only when needed
+5. Captions and timeline verification stage:
+   - use `POST /projects/{id}/captions`
+   - verify with `GET /projects/{id}/context?mode=timeline`
+   - insert captions only for the selected clip window
+6. Export and polling stage:
+   - use `POST /projects/{id}/export`
+   - poll with `GET /jobs/{jobId}` or `GET /exports/{exportId}`
+7. Verify:
    - `9:16` aspect ratio
    - duration matches the chosen suggestion window
    - no overlapping captions
