@@ -10,6 +10,7 @@ Use the BlitzReels API to create and edit video projects programmatically.
 For focused workflows, install the specialized skills:
 
 - **`blitzreels-faceless`** — Faceless video generation: topic/script → AI scenes → voiceover → export. Includes `faceless.sh` pipeline script, voice & visual style references.
+- **`blitzreels-clipping`** — Long video to short vertical clipping workflows: ingest → transcript → short suggestions → smart crop or ROI reframing → clip-window captions → export. Includes clipping-specific workflow guidance.
 - **`blitzreels-motion-graphics`** — Motion graphics via the Playground API: create compositions with text, shapes, charts, code, animations. Includes `playground.sh` CRUD script, composition spec reference.
 - **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
 
