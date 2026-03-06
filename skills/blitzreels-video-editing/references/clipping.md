@@ -13,6 +13,24 @@ Use this reference when the user wants to turn long-form video into short-form c
 - there are no overlapping duplicate captions
 - final export duration matches the chosen suggestion envelope within a small frame-rounding delta
 
+## Endpoint Index
+
+| Method | Path | Stage | Operator note |
+|--------|------|-------|---------------|
+| POST | `/workspace/media/import/youtube` | Ingest | Use for YouTube sources when the user explicitly wants workspace import. |
+| POST | `/projects/{id}/media` | Ingest | Use for project-bound local or URL ingest when you need a reliable export path. |
+| GET | `/workspace/media/assets/{assetId}` | Readiness | Confirms the media object exists; does not mean clipping is ready. |
+| GET | `/projects/{id}/transcript` | Readiness | Use to confirm transcript timing before trusting captions or clip windows. |
+| GET | `/workspace/media/assets/{assetId}/short-suggestions` | Readiness | Do not assume asset existence means suggestions are ready. |
+| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Apply | Prefer this when it preserves smart crop and clip-window-aware captions. |
+| POST | `/projects/{id}/timeline/media` | Apply fallback | Fallback only when suggestion-apply is missing or weaker than manual assembly. |
+| POST | `/projects/{id}/timeline/trim` | Apply fallback | Fallback only; use to reconstruct the suggestion window after timeline insert. |
+| POST | `/projects/{id}/captions` | Captions | Captions must be clip-window-aware, not full-asset transcript overlays. |
+| GET | `/projects/{id}/context?mode=timeline` | Timeline verify | Use to confirm the clip, captions, and reframing actually landed correctly. |
+| POST | `/projects/{id}/export` | Export | Start export only after clip and captions are verified on the timeline. |
+| GET | `/jobs/{jobId}` | Export polling | Poll async ingest, transcript, or export work until complete. |
+| GET | `/exports/{exportId}` | Export polling | Use for final export status and download URL. |
+
 ## Preferred Flow
 
 ### Local file to exported short
@@ -31,10 +49,12 @@ Use this path when the user wants a reliable end-to-end result.
 7. Poll suggestions:
    - `GET /workspace/media/assets/{assetId}/short-suggestions`
 8. Pick a suggestion and apply it through the strongest available path:
+   - endpoint stage: Apply
    - prefer a project or API flow that resolves the smart-cropped vertical asset
    - prefer a flow that inserts only caption overlaps for the chosen clip window
    - avoid static `fullscreen` crop plus later trim if a smarter path exists
 9. Apply captions only for the chosen clip window:
+   - endpoint stage: Captions
    - if captions are attached by source asset timing, rebase them to the clip start
    - do not attach the entire source transcript to the project timeline
 10. Verify timeline:
@@ -69,6 +89,7 @@ Use this when the user explicitly wants BlitzReels to fetch the YouTube video.
 Public API does not currently expose a direct "create project from suggestion" flow. Apply it with:
 
 1. Resolve the best clip source first
+   - endpoint stage: Apply fallback
    - prefer a derived vertical smart-crop asset
    - otherwise use ROI or analysis-driven reframing
    - only use a static center crop as a fallback

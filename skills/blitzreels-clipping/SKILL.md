@@ -34,6 +34,24 @@ This skill should prefer smart-cropped vertical video and clip-window-aware capt
 - Captions must be clip-window-aware. Do not attach the full asset transcript to a trimmed clip.
 - If the public API cannot apply a suggestion with smart crop plus clip-window captions, fall back to the stronger internal project-clipping path or reconstruct that behavior manually.
 
+## Endpoint Index
+
+| Method | Path | Stage | Operator note |
+|--------|------|-------|---------------|
+| POST | `/workspace/media/import/youtube` | Ingest | Use for YouTube sources when the user explicitly wants workspace import. |
+| POST | `/projects/{id}/media` | Ingest | Use for project-bound local or URL ingest when you need a reliable export path. |
+| GET | `/workspace/media/assets/{assetId}` | Readiness | Confirms the media object exists; does not mean clipping is ready. |
+| GET | `/projects/{id}/transcript` | Readiness | Use to confirm transcript timing before trusting captions or clip windows. |
+| GET | `/workspace/media/assets/{assetId}/short-suggestions` | Readiness | Do not assume asset existence means suggestions are ready. |
+| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Apply | Prefer this when it preserves smart crop and clip-window-aware captions. |
+| POST | `/projects/{id}/timeline/media` | Apply fallback | Fallback only when suggestion-apply is missing or weaker than manual assembly. |
+| POST | `/projects/{id}/timeline/trim` | Apply fallback | Fallback only; use to reconstruct the suggestion window after timeline insert. |
+| POST | `/projects/{id}/captions` | Captions | Captions must be clip-window-aware, not full-asset transcript overlays. |
+| GET | `/projects/{id}/context?mode=timeline` | Timeline verify | Use to confirm the clip, captions, and reframing actually landed correctly. |
+| POST | `/projects/{id}/export` | Export | Start export only after clip and captions are verified on the timeline. |
+| GET | `/jobs/{jobId}` | Export polling | Poll async ingest, transcript, or export work until complete. |
+| GET | `/exports/{exportId}` | Export polling | Use for final export status and download URL. |
+
 ## Companion References
 
 - Read [../blitzreels-video-editing/references/clipping.md](../blitzreels-video-editing/references/clipping.md) for the full workflow.
