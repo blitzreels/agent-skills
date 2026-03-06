@@ -39,6 +39,7 @@ This skill should prefer smart-cropped vertical video and clip-window-aware capt
 - Read [../blitzreels-video-editing/references/clipping.md](../blitzreels-video-editing/references/clipping.md) for the full workflow.
 - Read [../blitzreels-video-editing/references/caption-styles.md](../blitzreels-video-editing/references/caption-styles.md) only when a caption style choice matters.
 - Read [../blitzreels-video-editing/references/timeline-ops.md](../blitzreels-video-editing/references/timeline-ops.md) only when you need extra timeline operations.
+- Read [examples/youtube-to-shorts.md](examples/youtube-to-shorts.md) when you need a concrete clipping example.
 
 ## Output Expectations
 
