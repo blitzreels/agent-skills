@@ -7,9 +7,9 @@ description: Repurpose long-form video into short vertical clips with the BlitzR
 
 Use this skill when the task is specifically "long video to short clips".
 
-This skill should prefer smart-cropped vertical video and clip-window-aware captions whenever the product supports them.
+Current API shape: clipping is a multi-step orchestration built from ingest, transcript, suggestion, automatic layout, caption, and export endpoints. There is no one-shot public endpoint that takes a YouTube URL and returns a finished short.
 
-Current API shape: clipping is a multi-step workflow built from existing ingest, transcript, suggestion, timeline, caption, and export endpoints. There is no dedicated one-shot clipping endpoint yet.
+Default assumption: use planner-first clipping, not static center crop. Prefer automatic layout from reframe analysis. Treat derived smart-crop video as optional legacy help, not the canonical path.
 
 ## Default Path
 
@@ -17,9 +17,10 @@ Current API shape: clipping is a multi-step workflow built from existing ingest,
 2. Ingest media.
 3. Wait for transcript readiness.
 4. Poll short suggestions.
-5. Apply one suggestion with smart crop or ROI-aware reframing, not a static center crop.
-6. Apply captions only for the selected clip window.
-7. Export and verify duration plus aspect ratio.
+5. If framing quality matters, confirm reframe analysis readiness before apply.
+6. Apply one suggestion with automatic layout enabled.
+7. Verify captions were added only for the selected clip window.
+8. Export and verify duration plus aspect ratio.
 
 ## Start Conditions
 
@@ -32,46 +33,48 @@ Current API shape: clipping is a multi-step workflow built from existing ingest,
 - Do not trust a single duration field blindly. Cross-check suggestion timing, transcript timing, and timeline context.
 - Do not assume `auto_suggest_shorts=true` means suggestions are ready immediately.
 - Do not export before caption items exist on the project timeline.
-- Do not imply that the public API has a single endpoint that takes a YouTube URL and fully completes clipping in one request.
-- Prefer a clipping path that uses a smart-cropped derived asset or ROI-aware reframing over a static `fullscreen` crop.
+- Prefer automatic layout from reframe analysis over a static `fullscreen` crop.
 - Captions must be clip-window-aware. Do not attach the full asset transcript to a trimmed clip.
-- If the public API cannot apply a suggestion with smart crop plus clip-window captions, fall back to the stronger internal project-clipping path or reconstruct that behavior manually.
+- If `automatic_layout_applied=true`, still inspect `primary_layout`, `automatic_layout_fallback_used`, and `layout_summary`. Do not assume that means the clip got a strong split or focus layout.
+- If the public API cannot apply a suggestion with automatic layout plus clip-window captions, fall back to manual timeline assembly and rebase captions to the clip window.
 
-## Endpoint Index
+## Default Hints
 
-| Method | Path | Stage | Operator note |
-|--------|------|-------|---------------|
-| POST | `/workspace/media/import/youtube` | Ingest | Use for YouTube sources when the user explicitly wants workspace import. |
-| POST | `/projects/{id}/media` | Ingest | Use for project-bound local or URL ingest when you need a reliable export path. |
-| GET | `/workspace/media/assets/{assetId}` | Readiness | Confirms the media object exists; does not mean clipping is ready. |
-| GET | `/projects/{id}/transcript` | Readiness | Use to confirm transcript timing before trusting captions or clip windows. |
-| GET | `/workspace/media/assets/{assetId}/short-suggestions` | Readiness | Do not assume asset existence means suggestions are ready. |
-| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Apply | Prefer this when it preserves smart crop and clip-window-aware captions. |
-| POST | `/projects/{id}/timeline/media` | Apply fallback | Fallback only when suggestion-apply is missing or weaker than manual assembly. |
-| POST | `/projects/{id}/timeline/trim` | Apply fallback | Fallback only; use to reconstruct the suggestion window after timeline insert. |
-| POST | `/projects/{id}/captions` | Captions | Captions must be clip-window-aware, not full-asset transcript overlays. |
-| GET | `/projects/{id}/context?mode=timeline` | Timeline verify | Use to confirm the clip, captions, and reframing actually landed correctly. |
-| POST | `/projects/{id}/export` | Export | Start export only after clip and captions are verified on the timeline. |
-| GET | `/jobs/{jobId}` | Export polling | Poll async ingest, transcript, or export work until complete. |
-| GET | `/exports/{exportId}` | Export polling | Use for final export status and download URL. |
+- For podcast, interview, or two-speaker sources:
+  - `automatic_layout.enabled: true`
+  - `automatic_layout.content_type_hint: "podcast"`
+  - `automatic_layout.layout_strategy: "auto"`
+- For tutorial or screen-recording sources:
+  - `automatic_layout.enabled: true`
+  - `automatic_layout.content_type_hint: "tutorial"`
+  - `automatic_layout.layout_strategy: "focus"`
+- If the project already has the target aspect ratio, do not send a conflicting `aspect_ratio_override`.
 
 ## Companion References
 
 - Read [../blitzreels-video-editing/references/clipping.md](../blitzreels-video-editing/references/clipping.md) for the full workflow.
 - Read [../blitzreels-video-editing/references/caption-styles.md](../blitzreels-video-editing/references/caption-styles.md) only when a caption style choice matters.
 - Read [../blitzreels-video-editing/references/timeline-ops.md](../blitzreels-video-editing/references/timeline-ops.md) only when you need extra timeline operations.
+- Read [references/recovery.md](references/recovery.md) when a stage is blocked, missing, or failed.
 - Read [examples/youtube-to-shorts.md](examples/youtube-to-shorts.md) when you need a concrete clipping example.
 
 ## Output Expectations
 
 Return:
 
+- final status: `completed`, `blocked`, or `failed`
+- next action if not completed
+- blocking reason if blocked
 - source asset and project IDs
 - transcript readiness
 - suggestions found
 - chosen suggestion and time window
-- reframing path used: smart-crop asset, ROI/camera-plan, or static fallback
+- analysis status and analysis version
+- reframing path used: suggestion-apply, reframe-plan apply, or manual fallback
+- primary layout used
+- whether automatic layout fell back
 - caption style used
 - whether captions were clip-window-aware
+- captions added count
 - export ID and download URL
 - any ingest or duration inconsistency that could affect reliability
