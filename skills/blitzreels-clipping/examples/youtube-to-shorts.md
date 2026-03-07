@@ -26,7 +26,8 @@ Use this pattern when the user gives you a YouTube URL and wants one or more sho
    - prefer `POST /workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply`
    - set `automatic_layout.enabled: true`
    - for podcast or interview clips, prefer `content_type_hint: "podcast"`
-   - inspect `analysis_status`, `primary_layout`, `automatic_layout_fallback_used`, and `warnings`
+   - if the API returns `409` with `podcast_letterbox_rejected`, stop and report `final_status: "blocked"`
+   - inspect `analysis_status`, `primary_layout`, `automatic_layout_fallback_used`, `speaker_aware_applied`, and `warnings`
    - fallback to `POST /workspace/media/assets/{assetId}/reframe-plan/apply` or manual timeline assembly only when needed
 5. Captions and timeline verification stage:
    - verify `captions_added > 0`
@@ -47,6 +48,7 @@ Use this pattern when the user gives you a YouTube URL and wants one or more sho
 - reframing path used
 - primary layout
 - whether automatic layout fell back
+- whether speaker-aware reframing was applied
 - caption style used
 - confirmation that captions were clip-window-aware
 - export ID and download URL

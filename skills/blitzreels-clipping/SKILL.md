@@ -36,6 +36,7 @@ Default assumption: use planner-first clipping, not static center crop. Prefer a
 - Prefer automatic layout from reframe analysis over a static `fullscreen` crop.
 - Captions must be clip-window-aware. Do not attach the full asset transcript to a trimmed clip.
 - If `automatic_layout_applied=true`, still inspect `primary_layout`, `automatic_layout_fallback_used`, and `layout_summary`. Do not assume that means the clip got a strong split or focus layout.
+- If suggestion apply returns `409` with `podcast_letterbox_rejected`, stop and report `final_status: "blocked"`. Do not export a fallback-heavy podcast letterbox result unless the caller explicitly asked for letterbox.
 - If the public API cannot apply a suggestion with automatic layout plus clip-window captions, fall back to manual timeline assembly and rebase captions to the clip window.
 
 ## Default Hints
@@ -73,6 +74,7 @@ Return:
 - reframing path used: suggestion-apply, reframe-plan apply, or manual fallback
 - primary layout used
 - whether automatic layout fell back
+- whether speaker-aware podcast reframing was applied
 - caption style used
 - whether captions were clip-window-aware
 - captions added count

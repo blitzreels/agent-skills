@@ -45,12 +45,26 @@ Next action:
 
 Notes:
 - Do not treat `automatic_layout_applied=true` as proof of strong reframing.
-- Inspect `primary_layout`, `automatic_layout_fallback_used`, `layout_summary`, and `warnings` to see whether the result was split, focus, letterbox, or fallback-heavy.
+- Inspect `primary_layout`, `automatic_layout_fallback_used`, `speaker_aware_applied`, `layout_summary`, and `warnings` to see whether the result was split, focus, letterbox, fallback-heavy, or speaker-aware.
 
 Return:
 - `final_status: "blocked"` when waiting
 - `next_action: "wait_for_reframe_analysis"` or `next_action: "retry_reframe_analysis"`
 - `final_status: "completed"` with `fallback_used: true` if manual fallback succeeds
+
+## Podcast Layout Rejected
+
+Meaning:
+- the API refused to apply a podcast clip because the best available result was still fallback-heavy or letterboxed
+
+Next action:
+1. Read the `layout_summary` and `warnings` from the `409` response.
+2. Return `blocking_reason: "podcast_letterbox_rejected"`.
+3. Do not export unless the caller explicitly wants letterbox.
+
+Return:
+- `final_status: "blocked"`
+- `next_action: "pick_another_clip_or_allow_letterbox"`
 
 ## Captions Added Is Zero
 
