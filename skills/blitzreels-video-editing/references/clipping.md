@@ -2,14 +2,16 @@
 
 Use this reference when the user wants to turn long-form video into short-form clips with captions and export.
 
-Important: the current public API does not expose a single one-shot clipping endpoint. The workflow is orchestrated from existing ingest, transcript, suggestion, timeline, caption, and export endpoints.
+Important: the current public API does not expose a single one-shot clipping endpoint. The workflow is orchestrated from existing ingest, transcript, suggestion, timeline, preview, visual QA, repair, caption, and export endpoints.
 
 ## What Good Looks Like
 
 - transcript exists and has non-zero words
 - short suggestions exist
 - chosen suggestion is applied to a project timeline
-- the clip uses a smart-cropped vertical asset or ROI-aware reframing when available
+- the clip uses automatic layout, a smart-cropped vertical asset, source-view podcast reframe, or ROI-aware reframing when available
+- preview frames show visible faces and no obvious dead-space failure
+- podcast clips pass visual QA before export
 - caption items exist on the timeline before export
 - captions only cover the selected clip window
 - there are no overlapping duplicate captions
@@ -22,9 +24,22 @@ Important: the current public API does not expose a single one-shot clipping end
 | POST | `/workspace/media/import/youtube` | Ingest | Use for YouTube sources when the user explicitly wants workspace import. |
 | POST | `/projects/{id}/media` | Ingest | Use for project-bound local or URL ingest when you need a reliable export path. |
 | GET | `/workspace/media/assets/{assetId}` | Readiness | Confirms the media object exists; does not mean clipping is ready. |
+| GET | `/workspace/media/assets/{assetId}/reframe-analysis` | Layout readiness | Read the current public automatic-layout analysis state and summary. |
+| POST | `/workspace/media/assets/{assetId}/reframe-analysis` | Layout readiness | Queue or materialize reframe analysis before planning or applying layout. |
+| POST | `/workspace/media/assets/{assetId}/reframe-plan` | Layout planning | Generate an inspectable public reframe plan with segments, views, and warnings. |
+| POST | `/workspace/media/assets/{assetId}/reframe-plan/preview` | Layout planning | Generate a plan plus preview stills before apply. |
+| POST | `/workspace/media/assets/{assetId}/reframe-plan/apply` | Layout apply | Apply the public reframe plan to a project timeline. |
 | GET | `/projects/{id}/transcript` | Readiness | Use to confirm transcript timing before trusting captions or clip windows. |
 | GET | `/workspace/media/assets/{assetId}/short-suggestions` | Readiness | Do not assume asset existence means suggestions are ready. |
-| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Apply | Prefer this when it preserves smart crop and clip-window-aware captions. |
+| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Apply | Prefer this with `automatic_layout` when you want one-call clipping plus planner-backed layout. |
+| POST | `/projects/{id}/preview-frame` | Preview | Render one still for quick verification. |
+| POST | `/projects/{id}/preview-frames` | Preview | Render several ordered stills for QA. |
+| POST | `/projects/{id}/visual-analysis` | Visual QA | Get structured issues from preview stills. |
+| GET | `/projects/{id}/visual-debug` | Visual QA | Inspect layout geometry, visible rects, crops, and caption rects. |
+| POST | `/projects/{id}/timeline/media-views/{timelineItemId}` | Repair | Upsert crop/canvas/fit/planner state for one item. |
+| POST | `/projects/{id}/timeline/media-views/duplicate` | Repair | Duplicate a linked source view to another item for split layouts. |
+| INTERNAL | `timeline.generateReframePlan` | Apply | Internal app/editor API only. Use only when operating inside the editor stack and the public API is unavailable. |
+| INTERNAL | `timeline.applyReframePlan` | Apply | Internal app/editor API only. Use only when operating inside the editor stack and the public API is unavailable. |
 | POST | `/projects/{id}/timeline/media` | Apply fallback | Fallback only when suggestion-apply is missing or weaker than manual assembly. |
 | POST | `/projects/{id}/timeline/trim` | Apply fallback | Fallback only; use to reconstruct the suggestion window after timeline insert. |
 | POST | `/projects/{id}/captions` | Captions | Captions must be clip-window-aware, not full-asset transcript overlays. |
@@ -34,6 +49,41 @@ Important: the current public API does not expose a single one-shot clipping end
 | GET | `/exports/{exportId}` | Export polling | Use for final export status and download URL. |
 
 ## Preferred Flow
+
+### Podcast clipping with visual QA
+
+Use this as the normal path for podcast, interview, or two-speaker material.
+
+1. `POST /projects`
+2. ingest media
+3. wait for transcript and suggestions
+4. `POST /workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply`
+   - send `automatic_layout.enabled: true`
+   - send podcast hints
+5. inspect apply response
+   - check `automatic_layout_applied`
+   - check `analysis_status`
+   - check `analysis_version`
+   - check `layout_summary`
+   - check `warnings`
+   - if available in the deployed API, also check `visual_qa_status`, `visual_qa_required`, `visual_qa_passed`, and `preview_frame_count`
+6. if apply passed QA, export
+7. if apply failed QA or visual output is still bad:
+   - inspect returned `visual_qa` if present
+   - use project preview and visual debug endpoints if available
+   - try one repair path
+   - rerender previews
+   - rerun visual analysis
+   - export only after QA passes
+8. only bypass with `allow_unverified_export: true` when the deployed API supports it
+
+Blocking QA failures for podcast:
+
+- invalid crop values
+- out-of-bounds crops
+- single thin strip inside a larger wrapper
+- lost faces from bad crop
+- captions on faces when split gap or free space exists
 
 ### Local file to exported short
 
@@ -52,18 +102,27 @@ Use this path when the user wants a reliable end-to-end result.
    - `GET /workspace/media/assets/{assetId}/short-suggestions`
 8. Pick a suggestion and apply it through the strongest available path:
    - endpoint stage: Apply
+   - for podcast or split-speaker clips, read `podcast-reframe.md`
+   - prefer public `reframe-plan` or `reframe-plan/apply` when you need inspectable automatic layout or explicit plan control
+   - otherwise prefer suggestion apply with `automatic_layout`
    - prefer a project or API flow that resolves the smart-cropped vertical asset
    - prefer a flow that inserts only caption overlaps for the chosen clip window
+   - if a podcast clip returns `409` with `podcast_letterbox_rejected`, treat that as blocked instead of exporting
+   - if a podcast clip returns `409` with `podcast_visual_qa_failed`, treat that as blocked and inspect `visual_qa`
    - avoid static `fullscreen` crop plus later trim if a smarter path exists
-9. Apply captions only for the chosen clip window:
+9. For podcast or two-speaker clips, verify previews before export when the deployed API exposes them:
+   - `POST /projects/{projectId}/preview-frames`
+   - `POST /projects/{projectId}/visual-analysis`
+   - `GET /projects/{projectId}/visual-debug`
+10. Apply captions only for the chosen clip window:
    - endpoint stage: Captions
    - if captions are attached by source asset timing, rebase them to the clip start
    - do not attach the entire source transcript to the project timeline
-10. Verify timeline:
+11. Verify timeline:
    - `GET /projects/{projectId}/context?mode=timeline`
    - confirm reframing is not just a static center crop unless no better option exists
    - confirm captions do not overlap or double-render
-11. Export:
+12. Export:
    - `POST /projects/{projectId}/export`
    - poll `GET /jobs/{jobId}` or `GET /exports/{exportId}`
 
@@ -101,6 +160,80 @@ Public API does not currently expose a direct "create project from suggestion" f
 5. Verify the new timeline duration matches the suggestion window
 
 Prefer transcript or suggestion timing over asset detail timing if they disagree.
+
+## Repair Paths
+
+Prefer these before giving up on a podcast clip:
+
+1. preview planner output before apply
+   - `POST /workspace/media/assets/{assetId}/reframe-plan/preview`
+2. inspect layout geometry
+   - `GET /projects/{projectId}/visual-debug`
+3. repair one item source view
+   - `POST /projects/{projectId}/timeline/media-views/{timelineItemId}`
+4. duplicate a linked source view to build a split pair
+   - `POST /projects/{projectId}/timeline/media-views/duplicate`
+5. rerender stills and rerun visual analysis
+
+Do not blind-retry suggestion apply multiple times without inspecting previews or debug data.
+
+## Public Automatic Layout
+
+Use this when the user wants clipping to stay inside the public API and still
+benefit from source-view planning.
+
+### One-call suggestion apply
+
+Use:
+
+- `POST /workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply`
+
+Include:
+
+- `automatic_layout.enabled=true`
+- `automatic_layout.content_type_hint=auto|podcast|tutorial|generic`
+- `automatic_layout.layout_strategy=auto|letterbox|split|focus`
+- `automatic_layout.aspect_ratio_override=9:16|1:1|4:5|16:9|null`
+
+Expect:
+
+- `automatic_layout_applied`
+- `analysis_status`
+- `analysis_version`
+- `layout_summary`
+- `warnings`
+
+### Explicit analyze -> plan -> apply
+
+Use this when the user wants inspectable planner output or tighter control.
+
+1. Read or trigger analysis:
+   - `GET /workspace/media/assets/{assetId}/reframe-analysis`
+   - `POST /workspace/media/assets/{assetId}/reframe-analysis`
+2. Generate plan:
+   - `POST /workspace/media/assets/{assetId}/reframe-plan`
+3. Apply plan:
+   - `POST /workspace/media/assets/{assetId}/reframe-plan/apply`
+
+Hints are advisory, not hard overrides:
+
+- `podcast` can bias toward split or focus
+- `tutorial` can bias away from split
+- `split` still requires dual-speaker evidence
+- `focus` still requires a dominant subject
+- weak evidence should fall back with warnings instead of forcing the layout
+
+## Podcast-Specific Reframing
+
+If the user is clipping a podcast, interview, or two-speaker video:
+
+1. Prefer source-view planner reframing when the environment exposes internal
+   reframe APIs or the public `reframe-plan` / `reframe-plan/apply` endpoints.
+2. Prefer temporal planner segments over one global crop when speaker layout can
+   change during the clip.
+3. Treat smart-crop derived assets as fallback or perf helpers, not the default
+   best path, when planner APIs are available.
+4. Avoid forcing one split-screen layout across B-roll or screen-share sections.
 
 ## Known Failure Modes
 
@@ -149,16 +282,34 @@ Recovery:
 - use the endpoint index stages in order
 - only describe a one-shot route as a future product improvement, not as existing API behavior
 
+### Suggestion apply succeeds but podcast framing is still bad
+
+Meaning:
+- timeline item exists
+- automatic layout may have run
+- but visual output is still wrong
+
+Recovery:
+- inspect `layout_summary` and `warnings`
+- inspect `visual_qa_status` and `visual_qa` if the deployed API exposes them
+- render `preview-frames` when available
+- inspect `visual-debug` when available
+- try `reframe-plan/preview` or media-view repair
+- export only after QA passes or the caller explicitly opts into an unverified result
+
 ## QA Checklist
 
 - suggestion title matches the actual spoken content
 - clip starts with a real hook in the first 1 to 2 seconds
 - no dead air at the start or end
 - framing follows the area of interest instead of a blind center crop when smart crop or analysis exists
+- layout summary and warnings make sense for the chosen clip
 - captions exist on the timeline
 - captions are limited to the clip window
 - no duplicate or overlapping caption overlays appear
 - captions are readable against the video background
+- preview frames do not show a thin strip or wrong-center crop
+- for split podcasts, the split is visibly real and not just stacked bad crops
 - export duration is close to the target clip duration
 - export format and aspect ratio match the request
 

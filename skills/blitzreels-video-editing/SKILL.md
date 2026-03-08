@@ -1,11 +1,15 @@
 ---
 name: blitzreels-video-editing
-description: Video editing workflows with BlitzReels API — upload, transcribe, timeline editing, captions, overlays, backgrounds, and export.
+description: Video editing workflows with BlitzReels API — upload, transcribe, timeline editing, captions, overlays, backgrounds, export, and source-view ROI-aware reframing for stronger clipping flows.
 ---
 
 # BlitzReels Video Editing
 
 Edit videos via the BlitzReels API: upload media, transcribe, edit timeline, apply captions, add overlays and backgrounds, then export.
+
+If the task is specifically long-form to shorts, podcast-to-shorts, suggestion-backed clipping, or public automatic-layout reframe planning, prefer the `blitzreels-clipping` skill first and come back here for lower-level timeline work.
+
+Important: project preview and visual QA endpoints now exist. Use them when an agent needs to verify framing, caption placement, or layout visually before export.
 
 ## Quick Start
 
@@ -157,7 +161,24 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 |--------|------|-------------|
 | GET | `/projects/{id}/context?mode=...` | Get project context |
 | GET | `/projects/{id}/timeline/at?time_seconds=X` | Items at timestamp |
+| POST | `/projects/{id}/preview-frame` | Render one still preview |
+| POST | `/projects/{id}/preview-frames` | Render multiple still previews |
+| POST | `/projects/{id}/visual-analysis` | Run structured frame QA |
+| GET | `/projects/{id}/visual-debug` | Get machine-readable layout geometry |
 | POST | `/projects/{id}/timeline/undo` | Undo last action |
+
+### Media View Repair
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/projects/{id}/timeline/media-views/{timelineItemId}` | Upsert source-view crop/canvas state for one item |
+| POST | `/projects/{id}/timeline/media-views/duplicate` | Duplicate a linked source view to another item |
+
+### Clipping / Reframe Preview
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/workspace/media/assets/{assetId}/reframe-plan/preview` | Generate a reframe plan plus preview stills before apply |
 
 ### Export & Jobs
 
@@ -232,6 +253,7 @@ bash scripts/blitzreels.sh POST /projects/PROJECT_ID/upload/finalize \
 
 ## References
 
+- `references/clipping.md` — Long-form to short workflow, podcast QA loop, preview/repair endpoints
 - `references/caption-styles.md` — All 30+ presets, CaptionStyleSettings schema, animations
 - `references/overlays.md` — Text overlays, motion code, motion graphics schemas
 - `references/fill-layers.md` — 38+ background presets, FillLayerSettings schema
