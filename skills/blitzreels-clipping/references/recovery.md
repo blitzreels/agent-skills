@@ -12,6 +12,7 @@ Primary rule:
 Meaning:
 
 - source import, transcription, suggestion generation, assembly, QA, or export is still running
+- reframe analysis may still be pending even when the source and transcript are ready
 
 What to do:
 
@@ -22,6 +23,7 @@ Do not:
 
 - trigger low-level transcript tools
 - trigger suggestion generation manually
+- trigger reframe analysis manually during normal clipping
 - render your own preview frames
 
 ## `next_action = "reselect"`

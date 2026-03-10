@@ -67,6 +67,8 @@ Read these fields on every poll:
 - `status`
 - `next_action`
 - `blocking_reason`
+- `source.analysis_status`
+- `source.analysis_version`
 - `selection.alternatives`
 - `clip_window`
 - `layout.applied_mode`
@@ -85,6 +87,7 @@ Fast path:
 
 Blocked path:
 
+- if `blocking_reason = "analysis_not_ready"`, keep polling
 - if `blocking_reason = "podcast_letterbox_rejected"`, reselect
 - if `blocking_reason = "invalid_selection"`, reselect
 - if `blocking_reason = "podcast_visual_qa_failed"`, repair once, then reselect if still blocked
@@ -93,6 +96,7 @@ Blocked path:
 ## Hard Rules
 
 - Do not call `preview-frame`, `preview-frames`, `visual-analysis`, `timeline/trim`, `timeline/media`, or `reframe-plan/apply` when this skill is active.
+- Do not call `POST /workspace/media/assets/{assetId}/reframe-analysis` during normal clipping. `POST /podcast-clips` auto-triggers it.
 - Do not guess the next step from raw project state. Use `next_action`.
 - Do not export when `qa.blocking = true` unless the caller explicitly requests bypass and accepts the risk.
 - Do not run more than one repair pass unless the user asks for additional retries.

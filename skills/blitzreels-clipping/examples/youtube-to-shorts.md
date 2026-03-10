@@ -29,7 +29,7 @@ curl -X POST https://www.blitzreels.com/api/v1/podcast-clips \
     },
     "captions": {
       "enabled": true,
-      "style_id": "clean-bold"
+      "style_id": "highlighter-pro"
     },
     "qa": {
       "qa_mode": "required"
@@ -57,6 +57,11 @@ Interpretation:
 - if `next_action = "reselect"`, switch to another suggestion or a manual time range
 - if `next_action = "repair"`, run one repair pass
 - if `next_action = "export"`, export
+
+Notes:
+
+- `POST /podcast-clips` auto-triggers transcription, short suggestions, and reframe analysis
+- if `blocking_reason = "analysis_not_ready"`, keep polling
 
 ## 3. Optional Reselect
 
