@@ -1,111 +1,109 @@
 # Clipping Recovery
 
-Use this reference only when a `podcast_clip` is blocked or failed.
+Use this reference only when the current public clipping flow is blocked, degraded, or failed.
 
 Primary rule:
 
-- trust `next_action`
-- use `status` and `blocking_reason` as supporting context
+- recover by stage, not by assumption
+- keep the strongest public clipping path if it can still succeed
+- export only after the clip window, framing, and captions are verified
 
-## `next_action = "poll"`
-
-Meaning:
-
-- source import, transcription, suggestion generation, assembly, QA, or export is still running
-- reframe analysis may still be pending even when the source and transcript are ready
-
-What to do:
-
-1. Call `GET /podcast-clips/{clip_id}` again.
-2. Keep polling until `next_action` changes or `status` becomes terminal.
-
-Do not:
-
-- trigger low-level transcript tools
-- trigger suggestion generation manually
-- trigger reframe analysis manually during normal clipping
-- render your own preview frames
-
-## `next_action = "reselect"`
-
-Common reasons:
-
-- `blocking_reason = "invalid_selection"`
-- `blocking_reason = "podcast_letterbox_rejected"`
-- repair did not produce a safe result
-
-What to do:
-
-1. Inspect `selection.alternatives`.
-2. Pick another suggestion if one is available.
-3. If no good suggestion exists, use a manual absolute `time_range`.
-4. Call `POST /podcast-clips/{clip_id}/reselect`.
-
-Do not:
-
-- export a fallback-heavy letterbox clip
-- keep retrying the same rejected selection
-
-## `next_action = "repair"`
-
-Common reason:
-
-- `blocking_reason = "podcast_visual_qa_failed"`
-
-What to do:
-
-1. Inspect `qa.issues`.
-2. Run exactly one repair pass with `POST /podcast-clips/{clip_id}/repair`.
-3. Poll the clip again.
-4. If the clip is still blocked, reselect instead of looping repairs.
-
-Preferred repair modes:
-
-- `auto` first
-- `prefer_split` if the issue is speaker visibility or split composition
-- `prefer_focus` if the issue is weak focus framing
-- `move_captions_off_faces` if the issue is caption overlap
-
-## `next_action = "export"`
+## Transcript Missing
 
 Meaning:
 
-- the clip is ready to deliver
+- ingest completed enough to create media
+- transcript timing is still unavailable
 
 What to do:
 
-1. Confirm `qa.blocking = false`.
-2. Call `POST /podcast-clips/{clip_id}/export`.
-3. Poll until export completes.
+1. Poll `GET /projects/{projectId}/transcript?media_id=...`.
+2. If media processing is complete and transcript is still missing, call `POST /projects/{projectId}/transcribe`.
+3. Poll `GET /jobs/{jobId}` until transcription completes.
 
 Do not:
 
-- bypass QA unless the user explicitly asks for it
+- assume ingest completion means suggestions or captions are ready
 
-## `next_action = "stop"`
+## Suggestions Missing
 
 Meaning:
 
-- the run is terminal for now
+- transcript may exist
+- highlight extraction is not ready yet
 
 What to do:
 
-1. If `status = "exported"`, return the download URL.
-2. If `status = "failed"`, surface the failure clearly.
-3. If the clip is blocked without a valid follow-up action, report the blocking reason and stop.
+1. Poll `GET /workspace/media/assets/{assetId}/short-suggestions`.
+2. If transcript exists and suggestions stay empty, report the clip as blocked unless that deployment explicitly exposes a suggestion-generation endpoint for the asset.
 
-## Terminal Failure
+Do not:
 
-Treat the run as failed when:
+- invent a best moment without transcript-backed evidence
 
-- `status = "failed"`
-- `export.status = "failed"`
-- the API returns a non-retryable error
+## Suggestion Apply Blocked Or Weak
+
+Common cases:
+
+- `409 podcast_letterbox_rejected`
+- `409 podcast_visual_qa_failed`
+- apply succeeds but framing is still visibly wrong
+
+What to do:
+
+1. Inspect `layout_summary`, `warnings`, and any returned `visual_qa`.
+2. If available, render `POST /projects/{projectId}/preview-frames`.
+3. If available, inspect `GET /projects/{projectId}/visual-debug`.
+4. Prefer `POST /workspace/media/assets/{assetId}/reframe-plan/preview` or `POST /workspace/media/assets/{assetId}/reframe-plan/apply` when planner output is the stronger path.
+5. If a specific timeline item is bad, run one repair path with `POST /projects/{projectId}/timeline/media-views/{timelineItemId}`.
+6. Recheck previews or QA before export.
+
+Do not:
+
+- export a fallback-heavy letterbox podcast clip without surfacing the risk
+- blind-retry suggestion apply multiple times without inspecting evidence
+
+## Captions Misaligned To The Clip Window
+
+Meaning:
+
+- captions exist
+- but they cover the source asset instead of the selected clip window
+
+What to do:
+
+1. Reapply captions for the chosen clip window with `POST /projects/{projectId}/captions`.
+2. Verify `GET /projects/{projectId}/context?mode=timeline`.
+3. Confirm captions start near clip time `0`, do not overlap, and do not double-render.
+
+Do not:
+
+- export with full-source captions attached to a trimmed short
+
+## Export Pending Or Failed
+
+Meaning:
+
+- the clip itself may be correct
+- export has not finished or has failed
+
+What to do:
+
+1. Poll `GET /jobs/{jobId}` or `GET /exports/{exportId}`.
+2. If export fails, return the failure clearly and include the last known clip verification state.
+
+Do not:
+
+- rerun clipping from the start unless the timeline or caption state is also wrong
+
+## Return On Failure
 
 Return:
 
-- `final_status: "failed"`
-- `clip_id`
-- `blocking_reason` if present
-- `qa.issues` if relevant
-- any export failure details
+- `final_status: "blocked"` or `final_status: "failed"`
+- `project_id`
+- `asset_id`
+- selected suggestion and clip window if known
+- blocking stage
+- last known QA or visual evidence used
+- export failure details when relevant

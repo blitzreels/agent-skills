@@ -1,131 +1,158 @@
-# Example: YouTube Podcast to Vertical Clip
+# Example: YouTube URL to Vertical Short
 
-Use this flow when the caller gives a YouTube URL and wants one strong vertical podcast clip.
+Use this flow when the caller gives a YouTube URL and wants one exported vertical short from the current public API.
 
-Preferred caption presets for clipping:
-
-- `cinematic-doc-v1` for the default documentary or narrative look
-- `full-sentence` for full-sentence captions with active-word yellow emphasis
-- `single-word-instant` for one-word-at-a-time captions without animation
-
-## 1. Create
+## 1. Import The YouTube Source
 
 ```bash
-curl -X POST https://www.blitzreels.com/api/v1/podcast-clips \
+curl -X POST https://www.blitzreels.com/api/v1/workspace/media/import/youtube \
   -H "Authorization: Bearer $BLITZREELS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "source": {
-      "source_type": "youtube",
-      "asset_id": null,
-      "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID"
-    },
-    "selection": {
-      "selection_mode": "auto_best",
-      "suggestion_id": null,
-      "start_seconds": null,
-      "end_seconds": null
-    },
-    "target": {
-      "aspect_ratio": "9:16",
-      "max_duration_seconds": 75
-    },
-    "layout": {
-      "layout_mode": "auto"
-    },
-    "captions": {
-      "enabled": true,
-      "style_id": "cinematic-doc-v1"
-    },
-    "qa": {
-      "qa_mode": "required"
-    },
-    "export": {
-      "auto_export": false
-    }
+    "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID"
   }'
 ```
 
 Save:
 
-- `clip.clip_id`
+- `asset_id`
 
-## 2. Poll
+## 2. Create The Output Project
 
 ```bash
-curl https://www.blitzreels.com/api/v1/podcast-clips/{clip_id} \
+curl -X POST https://www.blitzreels.com/api/v1/projects \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "YouTube Short",
+    "aspect_ratio": "9:16"
+  }'
+```
+
+Save:
+
+- `project_id`
+
+## 3. Poll Transcript And Suggestions
+
+```bash
+curl https://www.blitzreels.com/api/v1/workspace/media/assets/{asset_id}/short-suggestions \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY"
+```
+
+If the deployment also exposes transcript polling on the project, verify transcript timing before trusting the clip window:
+
+```bash
+curl "https://www.blitzreels.com/api/v1/projects/{project_id}/transcript?media_id={asset_id}" \
   -H "Authorization: Bearer $BLITZREELS_API_KEY"
 ```
 
 Interpretation:
 
-- if `next_action = "poll"`, keep polling
-- if `next_action = "reselect"`, switch to another suggestion or a manual time range
-- if `next_action = "repair"`, run one repair pass
-- if `next_action = "export"`, export
+- keep polling until transcript timing exists and suggestions are non-empty
+- do not assume YouTube import success means clipping is ready
 
-Notes:
+## 4. Apply One Suggestion With Automatic Layout
 
-- `POST /podcast-clips` auto-triggers transcription, short suggestions, and reframe analysis
-- if `blocking_reason = "analysis_not_ready"`, keep polling
-
-## 3. Optional Reselect
-
-Use this only if the API asks for reselection or the user wants a different segment.
+Use the strongest public apply path first.
+Include the project-binding field required by your deployed API; keep the `automatic_layout` block.
 
 ```bash
-curl -X POST https://www.blitzreels.com/api/v1/podcast-clips/{clip_id}/reselect \
+curl -X POST https://www.blitzreels.com/api/v1/workspace/media/assets/{asset_id}/short-suggestions/{suggestion_id}/apply \
   -H "Authorization: Bearer $BLITZREELS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "selection": {
-      "selection_mode": "time_range",
-      "suggestion_id": null,
-      "start_seconds": 138.9,
-      "end_seconds": 307.285
+    "automatic_layout": {
+      "enabled": true,
+      "content_type_hint": "podcast",
+      "layout_strategy": "auto",
+      "aspect_ratio_override": "9:16"
     }
   }'
 ```
 
-## 4. Optional Repair
+Inspect:
 
-Use this only if `next_action = "repair"`.
+- `automatic_layout_applied`
+- `analysis_status`
+- `analysis_version`
+- `layout_summary`
+- `warnings`
+- if present: `visual_qa_status`, `visual_qa`, `preview_frame_count`
+
+If the clip is podcast or interview content and framing is weak, prefer planner or QA-assisted recovery before export.
+
+## 5. Optional Visual QA
 
 ```bash
-curl -X POST https://www.blitzreels.com/api/v1/podcast-clips/{clip_id}/repair \
+curl -X POST https://www.blitzreels.com/api/v1/projects/{project_id}/preview-frames \
   -H "Authorization: Bearer $BLITZREELS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "repair_mode": "auto"
+    "count": 4
   }'
 ```
 
-## 5. Export
+```bash
+curl https://www.blitzreels.com/api/v1/projects/{project_id}/visual-debug \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY"
+```
 
-Only export when `next_action = "export"` and `qa.blocking = false`.
+Use this when:
+
+- suggestion apply returns weak framing
+- a podcast clip looks letterboxed or off-center
+- you need evidence before retrying or repairing
+
+## 6. Apply Clip-Window Captions
 
 ```bash
-curl -X POST https://www.blitzreels.com/api/v1/podcast-clips/{clip_id}/export \
+curl -X POST https://www.blitzreels.com/api/v1/projects/{project_id}/captions \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "style_id": "documentary"
+  }'
+```
+
+Then verify:
+
+```bash
+curl "https://www.blitzreels.com/api/v1/projects/{project_id}/context?mode=timeline" \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY"
+```
+
+Checks:
+
+- captions are limited to the chosen clip window
+- captions start near clip time `0`
+- captions do not overlap or double-render
+
+## 7. Export
+
+```bash
+curl -X POST https://www.blitzreels.com/api/v1/projects/{project_id}/export \
   -H "Authorization: Bearer $BLITZREELS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "resolution": "1080p",
-    "format": "mp4",
-    "allow_blocking_qa_bypass": false
+    "format": "mp4"
   }'
 ```
 
-## 6. Final Checks
+Poll with `GET /jobs/{jobId}` or `GET /exports/{exportId}` until the download URL is available.
+
+## 8. Final Return
 
 Return these fields to the caller:
 
-- `clip.clip_id`
-- `clip.project_id`
-- `clip.clip_window`
-- `clip.layout.applied_mode`
-- `clip.layout.fallback_used`
-- `clip.captions.status`
-- `clip.qa.status`
-- `clip.qa.issues`
-- `clip.export.status`
-- `clip.export.download_url`
+- `final_status`
+- `project_id`
+- `asset_id`
+- `suggestion_id`
+- selected clip window
+- reframing path used
+- caption preset used
+- QA status and issues when checked
+- export status
+- download URL
