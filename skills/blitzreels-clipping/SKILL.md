@@ -1,42 +1,35 @@
 ---
 name: blitzreels-clipping
-description: Repurpose long-form video into short vertical clips with the BlitzReels API. Use when the task mentions clipping, repurposing a long video into shorts, YouTube-to-shorts, transcript-backed short suggestions, podcast-to-shorts reframing, split-speaker podcast clips, or exporting short vertical clips from a longer source.
+description: Convert long-form videos into short vertical clips with the BlitzReels Podcast Clipping API. Use when the request is about clipping, YouTube-to-shorts, podcast/interview-to-Reels, transcript-backed highlight extraction, selecting the best moment from a long source, repairing blocked clip candidates, or exporting final vertical shorts.
 ---
 
 # BlitzReels Clipping
 
-Use this skill for podcast and interview clipping.
+Use this skill for outcome-level clipping.
 
-Default to the task-level `podcast-clips` resource. Do not orchestrate editor primitives unless the user explicitly asks for low-level editing.
+Prefer the `podcast-clips` resource and its `next_action` state machine. Do not orchestrate low-level editor primitives unless the user explicitly asks for manual timeline editing.
 
-This skill follows the Claude skill guidance for low-freedom, outcome-level tools:
+## API Base + Discovery
 
-- keep the tool set small
-- hide fragile sequencing
-- expose one canonical state resource
-- use explicit next actions
+- Prefer `https://www.blitzreels.com/api/v1` for API calls.
+- Treat OpenAPI as canonical contract: `https://www.blitzreels.com/api/openapi.json`.
+- If a payload field is unclear, verify it in OpenAPI before sending.
 
-Reference:
+## Canonical Endpoints
 
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
+Use only these endpoints for normal clipping:
 
-## Canonical Tools
-
-Use only these endpoints:
-
-| Method | Path | Use |
-|--------|------|-----|
-| POST | `/podcast-clips` | Create one clip run from an asset or YouTube URL |
-| GET | `/podcast-clips/{clip_id}` | Poll state and inspect QA evidence |
-| POST | `/podcast-clips/{clip_id}/reselect` | Change the selected suggestion or absolute time range |
-| POST | `/podcast-clips/{clip_id}/repair` | Run one bounded repair pass |
-| POST | `/podcast-clips/{clip_id}/export` | Export a clip that is ready |
+- `POST /podcast-clips` — create one clipping run from an uploaded asset or YouTube URL
+- `GET /podcast-clips/{clip_id}` — poll state and inspect QA evidence
+- `POST /podcast-clips/{clip_id}/reselect` — change suggestion or set absolute time range
+- `POST /podcast-clips/{clip_id}/repair` — run one bounded repair pass
+- `POST /podcast-clips/{clip_id}/export` — export a clip that is ready
 
 One deliverable clip = one `podcast_clip` resource.
 
 ## Default Request
 
-Use these defaults unless the user says otherwise:
+Use these defaults unless the user overrides them:
 
 - `target.aspect_ratio: "9:16"`
 - `selection.selection_mode: "auto_best"`
@@ -45,30 +38,29 @@ Use these defaults unless the user says otherwise:
 - `qa.qa_mode: "required"`
 - `export.auto_export: false`
 
-Preferred caption presets for clipping:
+Caption style defaults:
 
-- `captions.style_id: "cinematic-doc-v1"` as the default recommendation
-- `captions.style_id: "full-sentence"` when the user wants full-sentence captions with subtle active-word yellow emphasis
-- `captions.style_id: "single-word-instant"` when the user wants one-word-at-a-time captions without animation
+- `captions.style_id: "cinematic-doc-v1"` (recommended default)
+- `captions.style_id: "full-sentence"` for sentence captions with subtle active-word highlight
+- `captions.style_id: "single-word-instant"` for one-word-at-a-time captions
 
-If the user gives an exact moment, use `selection_mode: "time_range"` with absolute `start_seconds` and `end_seconds`.
+Selection overrides:
 
-If the user chooses a specific suggestion, use `selection_mode: "suggestion"` with `suggestion_id`.
+- If user gives exact timestamps, use `selection_mode: "time_range"` with absolute `start_seconds` + `end_seconds`.
+- If user picks a specific candidate, use `selection_mode: "suggestion"` with `suggestion_id`.
 
-## Default Loop
+## Execution Loop
 
-1. Create the clip with `POST /podcast-clips`.
+1. Create run with `POST /podcast-clips`.
 2. Poll with `GET /podcast-clips/{clip_id}` while `next_action = "poll"`.
-3. If `next_action = "reselect"`, choose another candidate from `selection.alternatives` or switch to a manual time range, then call `POST /podcast-clips/{clip_id}/reselect`.
-4. If `next_action = "repair"`, call `POST /podcast-clips/{clip_id}/repair` once.
+3. If `next_action = "reselect"`, use `selection.alternatives` or manual range, then call `POST /podcast-clips/{clip_id}/reselect`.
+4. If `next_action = "repair"`, run one repair pass with `POST /podcast-clips/{clip_id}/repair`.
 5. If `next_action = "export"`, call `POST /podcast-clips/{clip_id}/export`.
-6. Keep polling until `status = "exported"`, `status = "failed"`, or `next_action = "stop"`.
+6. Continue until terminal state (`status = "exported" | "failed"`) or `next_action = "stop"`.
 
-## Decision Rules
+Never infer next steps from assumptions; always follow `next_action`.
 
-Use the clip resource as the only source of truth.
-
-Read these fields on every poll:
+## Poll Fields to Read Every Time
 
 - `status`
 - `next_action`
@@ -85,50 +77,51 @@ Read these fields on every poll:
 - `qa.blocking`
 - `qa.issues`
 - `qa.preview_urls`
+- `qa.visual_debug_url`
 - `export.status`
+
+## Decision Rules
 
 Fast path:
 
-- if `qa.status = "passed"` and `next_action = "export"`, export
+- If `qa.status = "passed"` and `next_action = "export"`, export.
 
 Blocked path:
 
-- if `blocking_reason = "analysis_not_ready"`, keep polling
-- if `blocking_reason = "podcast_letterbox_rejected"`, reselect
-- if `blocking_reason = "invalid_selection"`, reselect
-- if `blocking_reason = "podcast_visual_qa_failed"`, repair once, then reselect if still blocked
-- if `blocking_reason = "clip_window_caption_mismatch"`, do not export
+- `blocking_reason = "analysis_not_ready"` → keep polling
+- `blocking_reason = "podcast_letterbox_rejected"` → reselect
+- `blocking_reason = "invalid_selection"` → reselect
+- `blocking_reason = "podcast_visual_qa_failed"` → repair once, then reselect if still blocked
+- `blocking_reason = "clip_window_caption_mismatch"` → do not export
 
 ## Hard Rules
 
-- Do not call `preview-frame`, `preview-frames`, `visual-analysis`, `timeline/trim`, `timeline/media`, or `reframe-plan/apply` when this skill is active.
-- Do not call `POST /workspace/media/assets/{assetId}/reframe-analysis` during normal clipping. `POST /podcast-clips` auto-triggers it.
-- Do not guess the next step from raw project state. Use `next_action`.
-- Do not export when `qa.blocking = true` unless the caller explicitly requests bypass and accepts the risk.
-- Do not run more than one repair pass unless the user asks for additional retries.
-- Do not rebuild captions manually. Trust `captions.status` and `captions.clip_window_aware`.
-- Do not invent timestamps for QA. Use `qa.preview_urls` and `qa.visual_debug_url` as evidence only.
-- Do not silently fall back to letterbox for a podcast clip.
+- Do not call low-level endpoints (`preview-frame`, `preview-frames`, `visual-analysis`, `timeline/trim`, `timeline/media`, `reframe-plan/apply`) while this skill is active.
+- Do not call `POST /workspace/media/assets/{assetId}/reframe-analysis` during normal clipping; `POST /podcast-clips` triggers required analysis.
+- Do not export when `qa.blocking = true` unless user explicitly asks to bypass and accepts quality risk.
+- Do not run repeated repair loops by default. One repair pass, then reselect.
+- Do not manually rebuild captions for clipping flow; trust clip-level caption status fields.
+- Do not invent QA timestamps; use returned preview/debug evidence URLs only.
+- Do not silently accept fallback-heavy letterbox for podcast clipping.
 
-## Output Expectations
+## Output Contract
 
 Return:
 
-- `final_status`: `completed`, `blocked`, or `failed`
+- `final_status`: `completed` | `blocked` | `failed`
 - `clip_id`
 - `project_id`
-- `next_action` if not completed
-- `blocking_reason` if blocked
+- `next_action` (if not completed)
+- `blocking_reason` (if blocked)
 - selected clip window
 - applied layout mode
-- whether fallback was used
+- fallback used or not
 - captions status
-- QA status
-- QA issues
+- QA status + issues
 - export status
-- download URL when exported
+- download URL (when exported)
 
 ## References
 
-- Read [references/recovery.md](references/recovery.md) only when the clip is blocked or failed.
-- Read [examples/youtube-to-shorts.md](examples/youtube-to-shorts.md) only when you need an execution example.
+- Read `references/recovery.md` only when clip is blocked or failed.
+- Read `examples/youtube-to-shorts.md` only when a concrete execution example is needed.
