@@ -1,109 +1,91 @@
 # Clipping Recovery
 
-Use this reference only when the current public clipping flow is blocked, degraded, or failed.
+Use this reference only when a clip is blocked or failed and `next_action` guidance needs additional context.
 
-Primary rule:
+Primary rule: trust `next_action` and use `error` + `blocking_reason` as supporting context.
 
-- recover by stage, not by assumption
-- keep the strongest public clipping path if it can still succeed
-- export only after the clip window, framing, and captions are verified
+## `next_action = "poll"`
 
-## Transcript Missing
-
-Meaning:
-
-- ingest completed enough to create media
-- transcript timing is still unavailable
+Meaning: source import, transcription, suggestion generation, analysis, assembly, QA, or export is still running.
 
 What to do:
 
-1. Poll `GET /projects/{projectId}/transcript?media_id=...`.
-2. If media processing is complete and transcript is still missing, call `POST /projects/{projectId}/transcribe`.
-3. Poll `GET /jobs/{jobId}` until transcription completes.
+1. Call `GET /clips/{clip_id}` again.
+2. Keep polling until `next_action` changes or `status` becomes terminal.
 
 Do not:
 
-- assume ingest completion means suggestions or captions are ready
+- trigger low-level transcript, suggestion, or analysis endpoints — the clip resource manages these internally
+- render your own preview frames
 
-## Suggestions Missing
+## `next_action = "reselect"`
 
-Meaning:
+Common reasons:
 
-- transcript may exist
-- highlight extraction is not ready yet
+- `blocking_reason = "invalid_selection"` — requested suggestion not found or time range invalid
+- `blocking_reason = "letterbox_rejected"` — planner couldn't achieve split/focus for podcast content, fell back to mostly-letterbox segments which have poor vertical density
 
 What to do:
 
-1. Poll `GET /workspace/media/assets/{assetId}/short-suggestions`.
-2. If transcript exists and suggestions stay empty, report the clip as blocked unless that deployment explicitly exposes a suggestion-generation endpoint for the asset.
+1. Inspect `selection.alternatives` for other scored suggestions.
+2. Pick another suggestion if one is available.
+3. If no good suggestion exists, use a manual `time_range` with absolute `start_seconds` + `end_seconds`.
+4. Call `POST /clips/{clip_id}/reselect`.
 
 Do not:
 
-- invent a best moment without transcript-backed evidence
+- export a fallback-heavy letterbox clip without surfacing the risk
+- keep retrying the same rejected selection
 
-## Suggestion Apply Blocked Or Weak
+## `next_action = "repair"`
 
-Common cases:
-
-- `409 podcast_letterbox_rejected`
-- `409 podcast_visual_qa_failed`
-- apply succeeds but framing is still visibly wrong
+Common reason: `blocking_reason = "visual_qa_failed"` — automated frame inspection found critical issues (missing faces, thin strip splits, captions overlapping faces).
 
 What to do:
 
-1. Inspect `layout_summary`, `warnings`, and any returned `visual_qa`.
-2. If available, render `POST /projects/{projectId}/preview-frames`.
-3. If available, inspect `GET /projects/{projectId}/visual-debug`.
-4. Prefer `POST /workspace/media/assets/{assetId}/reframe-plan/preview` or `POST /workspace/media/assets/{assetId}/reframe-plan/apply` when planner output is the stronger path.
-5. If a specific timeline item is bad, run one repair path with `POST /projects/{projectId}/timeline/media-views/{timelineItemId}`.
-6. Recheck previews or QA before export.
+1. Inspect `qa.issues` for severity, code, and `suggested_fix`.
+2. Choose a repair mode based on the issue:
+   - `"auto"` — default, re-runs reframe planning
+   - `"prefer_split"` — when the issue is speaker visibility or split composition
+   - `"prefer_focus"` — when the issue is weak focus framing
+   - `"move_captions_off_faces"` — when the issue is caption overlap
+3. Run exactly one repair pass with `POST /clips/{clip_id}/repair`.
+4. Poll the clip again.
+5. If still blocked after repair, `next_action` will be `"reselect"` — do not loop repairs.
 
-Do not:
+## `next_action = "export"`
 
-- export a fallback-heavy letterbox podcast clip without surfacing the risk
-- blind-retry suggestion apply multiple times without inspecting evidence
-
-## Captions Misaligned To The Clip Window
-
-Meaning:
-
-- captions exist
-- but they cover the source asset instead of the selected clip window
+Meaning: clip is assembled, QA passed or is not blocking, captions are ready.
 
 What to do:
 
-1. Reapply captions for the chosen clip window with `POST /projects/{projectId}/captions`.
-2. Verify `GET /projects/{projectId}/context?mode=timeline`.
-3. Confirm captions start near clip time `0`, do not overlap, and do not double-render.
+1. Confirm `qa.blocking = false`.
+2. Call `POST /clips/{clip_id}/export`.
+3. Poll until export completes.
 
 Do not:
 
-- export with full-source captions attached to a trimmed short
+- bypass QA unless the user explicitly asks (set `allow_blocking_qa_bypass: true`)
 
-## Export Pending Or Failed
+## `next_action = "stop"`
 
-Meaning:
-
-- the clip itself may be correct
-- export has not finished or has failed
+Meaning: the run reached a terminal state.
 
 What to do:
 
-1. Poll `GET /jobs/{jobId}` or `GET /exports/{exportId}`.
-2. If export fails, return the failure clearly and include the last known clip verification state.
-
-Do not:
-
-- rerun clipping from the start unless the timeline or caption state is also wrong
+1. If `status = "exported"`, return the download URL.
+2. If `status = "failed"`, surface the `error` object which includes `step`, `code`, `why_failed`, and `how_to_fix`.
+3. If the clip is blocked without a valid follow-up, report the blocking reason and stop.
 
 ## Return On Failure
 
 Return:
 
 - `final_status: "blocked"` or `final_status: "failed"`
+- `clip_id`
 - `project_id`
-- `asset_id`
-- selected suggestion and clip window if known
-- blocking stage
-- last known QA or visual evidence used
+- `blocking_reason`
+- `error.step` — which workflow stage failed
+- `error.why_failed` and `error.how_to_fix`
+- `qa.issues` if relevant
 - export failure details when relevant

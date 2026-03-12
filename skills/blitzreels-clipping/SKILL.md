@@ -5,140 +5,151 @@ description: Repurpose long-form video into short vertical clips with the BlitzR
 
 # BlitzReels Clipping
 
-Use this skill for outcome-level long-form-to-short workflows.
+Use the `/clips` resource as the primary clipping path. It wraps ingest, transcription, suggestion generation, layout, captions, and QA into a single state machine driven by `next_action`. The agent follows `next_action` rather than orchestrating individual stages.
 
-Clipping is a staged workflow: ingest, transcript, short suggestions, automatic layout or reframe planning, preview or visual QA, clip-window captions, and export. Each stage has its own readiness gate because earlier stages (like ingest) can complete before later ones (like transcript or suggestions) are ready. The old one-shot clipping resource was deprecated because it skipped these gates and produced clips with missing captions, wrong framing, or bad duration.
-
-Keep the workflow stage-driven:
-
-- prefer automatic layout over manual timeline assembly because it analyzes faces, subjects, and motion tracks to produce tighter vertical framing — manual mode just letterboxes and leaves dead space
-- prefer the reframe-analysis + reframe-plan path when the user wants to inspect or adjust the plan before committing, or when suggestion apply already failed once
-- use preview or visual QA before retrying a weak podcast clip because the system caps automatic repair at one pass — beyond that, human judgment is needed
-- fall back to low-level `timeline/media` or `timeline/trim` only when the public apply paths cannot produce the result, since those bypass layout intelligence
-
-## Default Path
-
-1. Create a `9:16` project if the user needs a final exported short.
-2. Ingest media.
-3. Wait for transcript readiness.
-4. Wait for short suggestions.
-5. Apply one suggestion with the strongest public layout path:
-   - default: `POST /workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply`
-   - use `reframe-analysis` plus `reframe-plan` or `reframe-plan/apply` when the user wants inspectable planner output or tighter control
-6. For podcast, interview, or two-speaker clips, verify framing before export when preview or QA endpoints are available.
-7. Apply clip-window-aware captions.
-8. Verify the timeline and export.
+The low-level staged endpoints (suggestion apply, preview-frames, timeline/media-views, etc.) exist for manual-control scenarios but should not be used unless the `/clips` resource cannot produce the result.
 
 ## Canonical Endpoints
 
-Use these endpoints for normal clipping:
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/clips` | Create a clip run from an asset or YouTube URL |
+| GET | `/clips/{clip_id}` | Poll state — auto-advances through all stages |
+| POST | `/clips/{clip_id}/reselect` | Change suggestion or set absolute time range |
+| POST | `/clips/{clip_id}/repair` | Run one bounded repair pass |
+| POST | `/clips/{clip_id}/export` | Export a clip that is ready |
 
-| Method | Path | Stage | Use |
-|--------|------|-------|-----|
-| POST | `/projects` | Project | Create export target |
-| POST | `/workspace/media/import/youtube` | Ingest | Import a YouTube source into workspace media |
-| POST | `/projects/{id}/media` | Ingest | Ingest local file or URL into a project |
-| GET | `/projects/{id}/transcript` | Readiness | Confirm transcript timing before trusting captions or clip windows |
-| GET | `/workspace/media/assets/{assetId}/short-suggestions` | Readiness | Poll until suggestions exist |
-| GET | `/workspace/media/assets/{assetId}/reframe-analysis` | Layout readiness | Inspect current automatic-layout analysis state |
-| POST | `/workspace/media/assets/{assetId}/reframe-analysis` | Layout readiness | Trigger analysis when apply or planning needs it |
-| POST | `/workspace/media/assets/{assetId}/reframe-plan` | Layout planning | Generate inspectable plan output |
-| POST | `/workspace/media/assets/{assetId}/reframe-plan/apply` | Layout apply | Apply the public reframe plan to the timeline |
-| POST | `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` | Layout apply | Default one-call suggestion apply with `automatic_layout` |
-| POST | `/projects/{id}/preview-frames` | QA | Render ordered stills for visual verification |
-| POST | `/projects/{id}/visual-analysis` | QA | Run structured frame QA |
-| GET | `/projects/{id}/visual-debug` | QA | Inspect layout geometry and crops |
-| POST | `/projects/{id}/timeline/media-views/{timelineItemId}` | Repair | Upsert source-view crop or canvas state for one item |
-| POST | `/projects/{id}/timeline/media-views/duplicate` | Repair | Duplicate a linked source view for split layouts |
-| POST | `/projects/{id}/captions` | Captions | Apply a caption preset to the selected clip window |
-| GET | `/projects/{id}/context?mode=timeline` | Verify | Confirm clip, captions, and framing landed correctly |
-| POST | `/projects/{id}/export` | Export | Start final export |
-| GET | `/jobs/{jobId}` | Export polling | Poll async jobs |
-| GET | `/exports/{exportId}` | Export polling | Get export status and download URL |
+## Default Path
 
-## Default Hints
+1. Create the clip with `POST /clips`.
+2. Poll with `GET /clips/{clip_id}` while `next_action = "poll"`.
+3. If `next_action = "reselect"`, pick another candidate from `selection.alternatives` or switch to a manual time range, then call `POST /clips/{clip_id}/reselect`.
+4. If `next_action = "repair"`, call `POST /clips/{clip_id}/repair` once.
+5. If `next_action = "export"`, call `POST /clips/{clip_id}/export`.
+6. Keep polling until `status = "exported"`, `status = "failed"`, or `next_action = "stop"`.
 
-Use these defaults unless the user overrides them:
+The clip resource handles transcription, suggestion generation, reframe analysis, layout apply, captions, and QA internally. The agent never needs to call those endpoints directly.
 
-- target aspect ratio: `9:16`
-- suggestion apply: `automatic_layout.enabled = true`
-- `content_type_hint` biases segment-level layout decisions (it does not control aspect ratio or cropping directly):
-  - `"podcast"` — prefers split-speaker or focus-cut layouts when dual-speaker evidence exists
-  - `"tutorial"` — avoids split layout, favors focus-cut or letterbox since screen content matters more than faces
-  - `"generic"` — no bias, uses evidence-based decisions
-- `layout_strategy` is a hard constraint (unlike hint which is a preference):
-  - `"auto"` (default) — evidence-based, recommended in most cases
-  - `"split"` — forces dual-speaker split if evidence supports it, falls back with a warning otherwise
-  - `"focus"` — forces single-subject focus-cut if a dominant subject exists
-  - `"letterbox"` — forces letterbox on all segments regardless of evidence
-- only send `automatic_layout.aspect_ratio_override` when the project is not already `9:16`
+## Default Request
+
+```json
+{
+  "source": {
+    "source_type": "youtube",
+    "asset_id": null,
+    "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID"
+  },
+  "selection": {
+    "selection_mode": "auto_best",
+    "suggestion_id": null,
+    "start_seconds": null,
+    "end_seconds": null
+  },
+  "target": {
+    "aspect_ratio": "9:16",
+    "max_duration_seconds": 75
+  },
+  "layout": {
+    "layout_mode": "auto"
+  },
+  "captions": {
+    "enabled": true,
+    "style_id": "documentary"
+  },
+  "qa": {
+    "qa_mode": "required"
+  },
+  "export": {
+    "auto_export": false
+  }
+}
+```
+
+Overrides:
+
+- If the user gives an existing asset, use `source_type: "asset"` with `asset_id`.
+- If the user gives exact timestamps, use `selection_mode: "time_range"` with `start_seconds` and `end_seconds`.
+- If the user picks a specific suggestion, use `selection_mode: "suggestion"` with `suggestion_id`.
+- `layout_mode`: `"auto"` (default, evidence-based), `"prefer_split"` (forces dual-speaker split when evidence exists), `"prefer_focus"` (forces single-subject focus-cut).
+- `qa_mode`: `"required"` blocks export on QA failure; `"permissive"` allows export with warnings.
 
 Caption style defaults:
 
-- `documentary` as the default recommendation
-- `full-sentence` for sentence captions with active-word emphasis
-- `single-word-instant` for one-word-at-a-time captions
+- `documentary` — default recommendation
+- `full-sentence` — sentence captions with active-word emphasis
+- `single-word-instant` — one-word-at-a-time captions
+
+## Poll Fields
+
+Read these fields on every `GET /clips/{clip_id}`:
+
+- `status` — current workflow state
+- `next_action` — what to do next (`poll`, `reselect`, `repair`, `export`, `stop`)
+- `error` — structured error with `step`, `code`, `message`, `why_failed`, `how_to_fix`, and `retryable`
+- `source.analysis_status`, `source.analysis_version`
+- `source.transcript_status`, `source.suggestions_status`
+- `source.canonical_duration_seconds` — best-available duration (max of transcript, suggestions, and asset metadata because any single source can be wrong)
+- `selection.alternatives` — ranked suggestion list with scores
+- `clip_window` — applied start/end/duration
+- `layout.applied_mode`, `layout.primary_layout`, `layout.fallback_used`, `layout.warnings`
+- `captions.status`, `captions.clip_window_aware`, `captions.warnings`
+- `qa.status`, `qa.blocking`, `qa.issues`, `qa.preview_urls`, `qa.visual_debug_url`
+- `export.status`, `export.download_url`
 
 ## Decision Rules
 
-Read these signals after suggestion apply or planner apply:
-
-- `automatic_layout_applied`
-- `analysis_status`
-- `analysis_version`
-- `layout_summary`
-- `warnings`
-- if exposed by the deployment: `visual_qa_status`, `visual_qa_required`, `visual_qa_passed`, `visual_qa`, `preview_frame_count`
-
 Fast path:
 
-- if framing is good, captions are clip-window-aware, and the timeline verifies cleanly, export
+- if `qa.status = "passed"` and `next_action = "export"`, export
 
-Blocked path:
+Blocked path — follow `next_action`, which will be one of:
 
-- transcript missing after ingest completes — recover transcript before clipping, because captions and clip windows depend on transcript timing
-- suggestions missing — keep polling; only call a suggestion-generation endpoint if that deployment explicitly exposes one
-- `409 podcast_letterbox_rejected` — the planner couldn't find enough dual-speaker or subject evidence to produce split/focus layouts, so it fell back to mostly-letterbox segments. This blocks export because letterbox podcast clips have poor vertical density. Choose a different suggestion or try the reframe-plan path with adjusted hints
-- `409 podcast_visual_qa_failed` — automated frame inspection found critical issues (missing faces, thin strip splits, captions overlapping faces). Inspect the returned issue list and suggested fixes, try one repair pass via `timeline/media-views`, then recheck QA
-- captions cover the full source instead of the selected window — source transcripts span the entire asset, so a trimmed short would show captions from completely unrelated parts of the video. Rebuild captions for the clip window before export
+- `"poll"` when `blocking_reason` is `source_not_ready`, `suggestions_not_ready`, or `analysis_not_ready` — the clip resource is still auto-advancing through preparation stages
+- `"reselect"` when `blocking_reason` is `invalid_selection` (suggestion not found or time range invalid) or `letterbox_rejected` (planner couldn't achieve split/focus layout for podcast content — choose a different suggestion or time range)
+- `"repair"` when `blocking_reason` is `visual_qa_failed` — QA found critical framing issues. Run one repair pass, then poll. If still blocked after repair, `next_action` switches to `"reselect"`
+- `"stop"` when `status` is terminal (`exported` or `failed`)
+
+Repair modes:
+
+- `"auto"` — recommended default, re-runs reframe planning
+- `"prefer_split"` — when the issue is speaker visibility in a podcast/interview
+- `"prefer_focus"` — when the issue is weak single-subject framing
+- `"move_captions_off_faces"` — when QA flagged caption-on-face overlap
 
 ## Reasoning Behind Key Constraints
 
-These constraints exist because of real failure modes in the pipeline:
+- **Follow `next_action`, not assumptions**: the clip resource's state machine handles stage sequencing internally. Asset existence does not mean transcript, suggestions, or analysis are ready — `syncClip` checks each gate on every poll and auto-advances when ready.
 
-- **Stage gates matter**: asset existence does not mean transcript or suggestions are ready. Ingest, transcription, and suggestion generation are async — proceeding early produces clips with no captions, wrong timing, or no highlight selection.
+- **One repair pass, then reselect**: the system caps automatic repair at one pass because repeated retries accumulate planner fallbacks (more letterbox segments) and degrade quality. After one repair, if QA still blocks, `next_action` switches to `"reselect"` so a different suggestion or time range can be tried.
 
-- **Duration has three sources**: asset metadata (often wrong — reports full video length even after trimming), suggestion timing, and transcript timing (maximum end time of detected speech). The system takes the maximum of all three to avoid clipping content. Prefer suggestion timing for clip windows, transcript timing for caption alignment.
+- **Captions are clip-window-aware by default**: the clip resource applies captions scoped to the selected clip window. Source transcripts can span an entire hour — without scoping, a 90-second short would render captions from unrelated parts of the video.
 
-- **One repair pass, then stop**: the system automatically attempts one repair pass after suggestion apply. Beyond that, each retry can accumulate planner fallbacks (more letterbox segments) and degrade quality. Inspect `layout_summary`, previews, or visual-debug data to understand what went wrong before deciding the next action.
+- **Letterbox rejection for podcasts**: when `layout_mode` is `"auto"` and the planner can't achieve split/focus layouts (insufficient dual-speaker evidence), it rejects rather than silently exporting a low-quality letterboxed podcast clip.
 
-- **Clip-window captions**: source transcripts can span an entire hour-long podcast. Without clip-window scoping, a 90-second short would render captions from random parts of the source. The captions endpoint calculates overlap with the trimmed window and only includes matching portions.
-
-- **Letterbox risk for podcasts**: podcast clips with `content_type_hint = "podcast"` are expected to have tight speaker framing. When the planner can't achieve that, it surfaces the risk rather than silently exporting a low-quality letterboxed clip.
+- **Duration has three sources**: asset metadata (often wrong — reports full video length even after trimming), suggestion timing, and transcript timing. `canonical_duration_seconds` takes the max of all three to avoid clipping content.
 
 ## Output Contract
 
 Return:
 
 - `final_status`: `completed` | `blocked` | `failed`
+- `clip_id`
 - `project_id`
-- `asset_id`
-- chosen suggestion and clip window
-- transcript readiness
-- suggestions readiness
-- analysis status and analysis version when used
-- reframing path used: `suggestion-apply`, `reframe-plan/apply`, or `manual-fallback`
-- primary layout or fallback summary
-- caption preset used
-- whether captions were clip-window-aware
-- QA status and issues when checked
+- `next_action` if not completed
+- `blocking_reason` if blocked
+- selected clip window
+- applied layout mode and whether fallback was used
+- captions status and whether clip-window-aware
+- QA status and issues
 - export status
 - download URL when exported
 
+## Manual-Control Fallback
+
+When the `/clips` resource cannot produce the result (custom reframe plans, manual timeline edits, non-standard caption workflows), fall back to the staged endpoints. Read `references/staged-endpoints.md` for the full endpoint table and workflow.
+
 ## References
 
-- Read `../blitzreels-video-editing/references/clipping.md` for the full staged workflow.
-- Read `../blitzreels-video-editing/references/podcast-reframe.md` when the clip is podcast, interview, or two-speaker content.
-- Read `../blitzreels-video-editing/references/caption-styles.md` only when caption preset choice matters.
-- Read `references/recovery.md` only when the flow is blocked, degraded, or failed.
-- Read `examples/youtube-to-shorts.md` only when a concrete clipping example is needed.
+- Read `references/recovery.md` only when the clip is blocked or failed and `next_action` guidance is insufficient.
+- Read `references/staged-endpoints.md` only when manual-control fallback is needed.
+- Read `examples/youtube-to-shorts.md` only when a concrete execution example is needed.
