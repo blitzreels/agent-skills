@@ -44,23 +44,42 @@ Save:
 
 - `clip.clip_id`
 
-## 2. Poll
+## 2. Poll Until Suggestions Are Ready
 
 ```bash
 curl https://www.blitzreels.com/api/v1/clips/{clip_id} \
   -H "Authorization: Bearer $BLITZREELS_API_KEY"
 ```
 
-Interpretation:
+Keep polling while `next_action = "poll"`. Once `source.suggestions_status = "ready"`, the response includes `selection.alternatives` — the ranked suggestion list.
 
-- if `next_action = "poll"`, keep polling — the clip is auto-advancing through source import, transcription, suggestions, analysis, assembly, captions, and QA
-- if `next_action = "reselect"`, switch to another suggestion or a manual time range
-- if `next_action = "repair"`, run one repair pass
-- if `next_action = "export"`, export
+## 3. Present Suggestions To The User
 
-## 3. Optional Reselect
+Show the user the available segments before proceeding:
 
-Use this only if `next_action = "reselect"`.
+```
+Here are the best moments I found:
+
+1. "Why Most Startups Fail" (score: 0.92)
+   0:45 – 1:58 (73s)
+   Hook: The number one reason startups fail isn't what you think
+
+2. "The Hiring Mistake" (score: 0.85)
+   3:12 – 4:28 (76s)
+   Hook: We hired 10 people in 2 weeks and it nearly killed us
+
+3. "Product-Market Fit Signal" (score: 0.78)
+   7:01 – 8:15 (74s)
+   Hook: The moment we knew we had product-market fit
+
+Which one would you like to clip? Or give me a custom time range.
+```
+
+If `auto_best` already picked what the user wants, continue polling. Otherwise, reselect.
+
+## 4. Optional Reselect
+
+If the user picks a different suggestion:
 
 ```bash
 curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/reselect \
@@ -69,14 +88,14 @@ curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/reselect \
   -d '{
     "selection": {
       "selection_mode": "suggestion",
-      "suggestion_id": "PICK_FROM_ALTERNATIVES",
+      "suggestion_id": "CHOSEN_SUGGESTION_ID",
       "start_seconds": null,
       "end_seconds": null
     }
   }'
 ```
 
-Or use a manual time range:
+If the user provides manual timestamps:
 
 ```bash
 curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/reselect \
@@ -92,7 +111,7 @@ curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/reselect \
   }'
 ```
 
-## 4. Optional Repair
+## 5. Optional Repair
 
 Use this only if `next_action = "repair"`.
 
@@ -105,7 +124,7 @@ curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/repair \
   }'
 ```
 
-## 5. Export
+## 6. Export
 
 Only export when `next_action = "export"` and `qa.blocking = false`.
 
@@ -120,7 +139,7 @@ curl -X POST https://www.blitzreels.com/api/v1/clips/{clip_id}/export \
   }'
 ```
 
-## 6. Final Return
+## 7. Final Return
 
 Return these fields to the caller:
 
@@ -133,4 +152,5 @@ Return these fields to the caller:
 - `clip.qa.status`
 - `clip.qa.issues`
 - `clip.export.status`
-- `clip.export.download_url`
+- `clip.export.short_download_url` (clean URL, preferred)
+- `clip.export.download_url` (presigned S3 URL, fallback)

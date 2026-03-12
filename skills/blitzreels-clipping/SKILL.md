@@ -19,14 +19,33 @@ The low-level staged endpoints (suggestion apply, preview-frames, timeline/media
 | POST | `/clips/{clip_id}/repair` | Run one bounded repair pass |
 | POST | `/clips/{clip_id}/export` | Export a clip that is ready |
 
+## User-Facing Workflow
+
+Before creating a clip, let the user choose which segment to clip. This avoids wasting an API call on content the user doesn't want.
+
+1. **Ingest and wait for suggestions.** Create the clip with `selection_mode: "auto_best"` and poll until `source.suggestions_status = "ready"`. The first poll response with suggestions will include `selection.alternatives`.
+
+2. **Present suggestions to the user.** Show the ranked list from `selection.alternatives`:
+   - title, hook, start/end timestamps, duration, score
+   - Let the user pick one, or provide their own time range.
+
+3. **If the user picks a different suggestion** than `auto_best` selected, call `POST /clips/{clip_id}/reselect` with `selection_mode: "suggestion"` and the chosen `suggestion_id`.
+
+4. **If the user provides manual timestamps**, call `POST /clips/{clip_id}/reselect` with `selection_mode: "time_range"` and the absolute `start_seconds` + `end_seconds`.
+
+5. **Continue the normal poll loop** — follow `next_action` until export.
+
+If the user says "just pick the best one" or doesn't express a preference, skip step 2 and let `auto_best` proceed.
+
 ## Default Path
 
 1. Create the clip with `POST /clips`.
 2. Poll with `GET /clips/{clip_id}` while `next_action = "poll"`.
-3. If `next_action = "reselect"`, pick another candidate from `selection.alternatives` or switch to a manual time range, then call `POST /clips/{clip_id}/reselect`.
-4. If `next_action = "repair"`, call `POST /clips/{clip_id}/repair` once.
-5. If `next_action = "export"`, call `POST /clips/{clip_id}/export`.
-6. Keep polling until `status = "exported"`, `status = "failed"`, or `next_action = "stop"`.
+3. When suggestions are ready, present them to the user for selection (see above).
+4. If `next_action = "reselect"`, pick another candidate from `selection.alternatives` or switch to a manual time range, then call `POST /clips/{clip_id}/reselect`.
+5. If `next_action = "repair"`, call `POST /clips/{clip_id}/repair` once.
+6. If `next_action = "export"`, call `POST /clips/{clip_id}/export`.
+7. Keep polling until `status = "exported"`, `status = "failed"`, or `next_action = "stop"`.
 
 The clip resource handles transcription, suggestion generation, reframe analysis, layout apply, captions, and QA internally. The agent never needs to call those endpoints directly.
 
@@ -89,12 +108,35 @@ Read these fields on every `GET /clips/{clip_id}`:
 - `source.analysis_status`, `source.analysis_version`
 - `source.transcript_status`, `source.suggestions_status`
 - `source.canonical_duration_seconds` — best-available duration (max of transcript, suggestions, and asset metadata because any single source can be wrong)
-- `selection.alternatives` — ranked suggestion list with scores
+- `selection.alternatives` — ranked suggestion list with scores (present these to the user for selection)
 - `clip_window` — applied start/end/duration
 - `layout.applied_mode`, `layout.primary_layout`, `layout.fallback_used`, `layout.warnings`
 - `captions.status`, `captions.clip_window_aware`, `captions.warnings`
 - `qa.status`, `qa.blocking`, `qa.issues`, `qa.preview_urls`, `qa.visual_debug_url`
-- `export.status`, `export.download_url`
+- `export.status`, `export.download_url`, `export.short_download_url`
+
+## Suggestion Presentation Format
+
+When presenting suggestions to the user, format each alternative clearly:
+
+**Example:**
+```
+Here are the best moments I found:
+
+1. "Why Most Startups Fail" (score: 0.92)
+   0:45 – 1:58 (73s)
+   Hook: The number one reason startups fail isn't what you think
+
+2. "The Hiring Mistake" (score: 0.85)
+   3:12 – 4:28 (76s)
+   Hook: We hired 10 people in 2 weeks and it nearly killed us
+
+3. "Product-Market Fit Signal" (score: 0.78)
+   7:01 – 8:15 (74s)
+   Hook: The moment we knew we had product-market fit
+
+Which one would you like to clip? Or give me a custom time range.
+```
 
 ## Decision Rules
 
@@ -115,6 +157,15 @@ Repair modes:
 - `"prefer_split"` — when the issue is speaker visibility in a podcast/interview
 - `"prefer_focus"` — when the issue is weak single-subject framing
 - `"move_captions_off_faces"` — when QA flagged caption-on-face overlap
+
+## Download URLs
+
+The API returns two download URLs:
+
+- `export.download_url` — presigned S3 URL (long, expires in 1 hour)
+- `export.short_download_url` — clean redirect URL like `https://www.blitzreels.com/api/v1/exports/{exportId}/download` (requires auth header, 302-redirects to the presigned URL)
+
+When presenting the download link to the user, prefer `short_download_url` for readability.
 
 ## Reasoning Behind Key Constraints
 
@@ -142,7 +193,7 @@ Return:
 - captions status and whether clip-window-aware
 - QA status and issues
 - export status
-- download URL when exported
+- `short_download_url` when exported (prefer this over `download_url`)
 
 ## Manual-Control Fallback
 
