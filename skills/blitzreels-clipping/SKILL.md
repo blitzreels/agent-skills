@@ -45,6 +45,12 @@ Use these defaults unless the user says otherwise:
 - `qa.qa_mode: "required"`
 - `export.auto_export: false`
 
+Preferred caption presets for clipping:
+
+- `captions.style_id: "cinematic-doc-v1"` as the default recommendation
+- `captions.style_id: "full-sentence"` when the user wants full-sentence captions with subtle active-word yellow emphasis
+- `captions.style_id: "single-word-instant"` when the user wants one-word-at-a-time captions without animation
+
 If the user gives an exact moment, use `selection_mode: "time_range"` with absolute `start_seconds` and `end_seconds`.
 
 If the user chooses a specific suggestion, use `selection_mode: "suggestion"` with `suggestion_id`.

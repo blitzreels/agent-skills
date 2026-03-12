@@ -2,6 +2,12 @@
 
 Use this flow when the caller gives a YouTube URL and wants one strong vertical podcast clip.
 
+Preferred caption presets for clipping:
+
+- `cinematic-doc-v1` for the default documentary or narrative look
+- `full-sentence` for full-sentence captions with active-word yellow emphasis
+- `single-word-instant` for one-word-at-a-time captions without animation
+
 ## 1. Create
 
 ```bash
@@ -29,7 +35,7 @@ curl -X POST https://www.blitzreels.com/api/v1/podcast-clips \
     },
     "captions": {
       "enabled": true,
-      "style_id": "highlighter-pro"
+      "style_id": "cinematic-doc-v1"
     },
     "qa": {
       "qa_mode": "required"
