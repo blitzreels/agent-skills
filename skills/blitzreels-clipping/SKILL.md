@@ -97,6 +97,7 @@ Caption style defaults:
 - `documentary` — default recommendation
 - `full-sentence` — sentence captions with active-word emphasis
 - `single-word-instant` — one-word-at-a-time captions
+- Any custom theme UUID from `/caption-themes` — use a theme ID created via the caption themes skill
 
 ## Poll Fields
 
