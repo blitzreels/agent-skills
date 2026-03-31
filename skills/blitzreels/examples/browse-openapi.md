@@ -29,13 +29,13 @@ curl -sS https://www.blitzreels.com/api/openapi.json | jq -r '
 ```bash
 curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
-  | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job' || true
+  | grep -iE 'caption|export|timeline|overlay|template|webhook|job' || true
 ```
 
 ## Inspect A Specific Operation Schema
 
 ```bash
-PATH_TO_INSPECT="/projects/{id}/faceless"
+PATH_TO_INSPECT="/projects/{id}/export"
 curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq --arg p "$PATH_TO_INSPECT" '.paths[$p]'
 ```

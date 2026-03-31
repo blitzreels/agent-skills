@@ -24,7 +24,6 @@ BODY="${3:-}"
 ALLOW_EXPENSIVE="${BLITZREELS_ALLOW_EXPENSIVE:-}"
 is_expensive_path() {
   case "$1" in
-    */faceless|*/faceless/*) return 0 ;;
     */export|*/export/*) return 0 ;;
   esac
   return 1

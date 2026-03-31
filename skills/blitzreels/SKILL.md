@@ -9,7 +9,6 @@ Use the BlitzReels API to create and edit video projects programmatically.
 
 For focused workflows, install the specialized skills:
 
-- **`blitzreels-faceless`** — Faceless video generation: topic/script → AI scenes → voiceover → export. Includes `faceless.sh` pipeline script, voice & visual style references.
 - **`blitzreels-clipping`** — Long video to short vertical clipping workflows: ingest → transcript → short suggestions → smart crop or ROI reframing → clip-window captions → export. Includes clipping-specific workflow guidance.
 - **`blitzreels-motion-graphics`** — Motion graphics via the Playground API: create compositions with text, shapes, charts, code, animations. Includes `playground.sh` CRUD script, composition spec reference.
 - **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
@@ -22,7 +21,7 @@ Environment variables:
 export BLITZREELS_API_KEY="br_live_xxxxx"
 # Optional: override API base URL (defaults to https://www.blitzreels.com/api/v1)
 export BLITZREELS_API_BASE_URL="https://www.blitzreels.com/api/v1"
-# Safety: required to call expensive endpoints like /faceless and /export with the helper script
+# Safety: required to call expensive endpoints like /export with the helper script
 export BLITZREELS_ALLOW_EXPENSIVE=1
 ```
 
@@ -75,7 +74,7 @@ Search by keyword:
 ```bash
 curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
-  | grep -iE 'faceless|caption|export|timeline|overlay|template|webhook|job|playground' || true
+  | grep -iE 'caption|export|timeline|overlay|template|webhook|job|playground' || true
 ```
 
 Inspect one endpoint in detail:

@@ -233,5 +233,5 @@ echo "    bash scripts/blitzreels.sh GET \"/projects/${PROJECT_ID}/context?mode=
 echo "  Context (assets):"
 echo "    bash scripts/blitzreels.sh GET \"/projects/${PROJECT_ID}/context?mode=assets\""
 echo ""
-echo "Export a slideshow video (expensive):"
-echo "  bash scripts/blitzreels.sh POST \"/projects/${PROJECT_ID}/export\" '{\"resolution\":\"1080p\",\"format\":\"mp4\"}'"
+echo "Export as ZIP of individual slide images (expensive):"
+echo "  BLITZREELS_ALLOW_EXPENSIVE=1 bash scripts/blitzreels.sh POST \"/projects/${PROJECT_ID}/export\" '{\"format\":\"zip\",\"image_formats\":[\"png\",\"jpg\"],\"jpeg_quality\":90}'"
