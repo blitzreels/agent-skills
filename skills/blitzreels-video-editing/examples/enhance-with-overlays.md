@@ -63,31 +63,21 @@ bash scripts/blitzreels.sh POST /projects/proj_abc123/motion-graphics '{
 ## 5. Add Cinematic Background
 
 ```bash
-bash scripts/blitzreels.sh POST /projects/proj_abc123/fill-layers '{
-  "preset": "cinematic_letterbox",
-  "spanFullVideo": true
+bash scripts/blitzreels.sh POST /projects/proj_abc123/backgrounds '{
+  "style_keyword": "film",
+  "span_full_video": true
 }'
 ```
 
 Or use a custom gradient:
 
 ```bash
-bash scripts/blitzreels.sh POST /projects/proj_abc123/fill-layers '{
-  "settings": {
-    "gradientEnabled": true,
-    "gradient": {
-      "type": "linear",
-      "angle": 180,
-      "stops": [
-        {"color": "#0a1628", "position": 0},
-        {"color": "#000000", "position": 100}
-      ]
-    },
-    "vignetteIntensity": 0.3,
-    "filmGrainStyle": "subtle",
-    "filmGrainIntensity": 0.1
-  },
-  "spanFullVideo": true
+bash scripts/blitzreels.sh POST /projects/proj_abc123/backgrounds '{
+  "color": "#0a1628",
+  "gradient_enabled": true,
+  "vignette_intensity": 0.3,
+  "film_grain_style": "subtle",
+  "span_full_video": true
 }'
 ```
 

@@ -47,14 +47,9 @@ Remove 2 seconds from the start and 3 seconds from the end of a clip:
 bash scripts/editor.sh trim proj_abc123 item_001 2.0 -3.0
 ```
 
-## 7. Auto-Remove Silences (Optional)
+## 7. Silence Cleanup (Optional)
 
-```bash
-bash scripts/blitzreels.sh POST /projects/proj_abc123/timeline/silence-detection '{}'
-# → Returns silence plan with regions
-# Review, then apply:
-bash scripts/blitzreels.sh POST /projects/proj_abc123/timeline/apply-silence-plan '{"plan_id":"..."}'
-```
+No public silence-detection endpoint is registered today. Use the dashboard/clipping flow, or inspect transcript/context and apply explicit trim/split/delete/move operations.
 
 ## 8. Apply Captions
 

@@ -11,8 +11,8 @@
 ## Slide plan
 
 ### Slide 1 — Hook
-**Text** (add natively in TikTok): `3 things I stopped doing to finally lose weight`
-**Background prompt**:
+**Text** (user types in TikTok): `3 things I stopped doing to finally lose weight`
+**Background prompt** (passed to the API, which renders via fal-ai/nano-banana):
 ```
 Candid mirror selfie in gym locker room, person partially visible holding iPhone,
 fluorescent overhead lighting, slightly overexposed, messy gym bag on bench in
@@ -20,7 +20,7 @@ background, iPhone front camera quality, light film grain
 ```
 
 ### Slide 2 — Value
-**Text** (add natively in TikTok): `1. counting every calorie by hand\n2. skipping meals to "save" calories\n3. eating the same 4 boring meals`
+**Text** (user types in TikTok): `1. counting every calorie by hand\n2. skipping meals to "save" calories\n3. eating the same 4 boring meals`
 **Background prompt**:
 ```
 Close-up of phone screen showing a messy notes app with crossed out food items,
@@ -29,7 +29,7 @@ slightly out of focus edges, casual and unpolished
 ```
 
 ### Slide 3 — Reveal (product integration)
-**Text** (add natively in TikTok): `this app just... does it for you?\nlike I take a photo and it logs everything`
+**Text** (user types in TikTok): `this app just... does it for you?\nlike I take a photo and it logs everything`
 **Background prompt**:
 ```
 POV looking down at phone on kitchen table, phone screen showing a colorful food
@@ -41,10 +41,12 @@ left, crumbs on table, iPhone quality, no filters
 
 ## API commands
 
+Path A means we export clean backgrounds only (no text baked in) and the user types the copy inside TikTok. So the slides payload has `background_prompt` but no `title` / `body`.
+
 ```bash
 export BLITZREELS_API_KEY="br_live_xxxxx"
 
-# 1. Create project
+# 1. Create the carousel project
 PROJECT=$(bash scripts/blitzreels.sh POST /projects '{
   "name": "Fitness App - Stopped Doing",
   "project_type": "carousel",
@@ -53,48 +55,54 @@ PROJECT=$(bash scripts/blitzreels.sh POST /projects '{
     "platform": "tiktok",
     "safe_area_preset": "tiktok_9_16",
     "slide_count": 3,
-    "background_strategy": "ai_image",
+    "background_strategy": "mixed",
     "export_formats": ["png"],
     "jpeg_quality": 90
   }
 }')
 PROJECT_ID=$(echo "$PROJECT" | jq -r '.id')
 
-# 2. Generate slides (backgrounds only — no text, we'll add natively in TikTok)
-cat > /tmp/slides.json << 'JSON'
+# 2. One-call generation — uploads + AI images + timeline, no text overlays (Path A)
+cat > /tmp/slides.json <<'JSON'
 {
   "clear_existing": true,
   "slide_duration_seconds": 3,
-  "background_strategy": "ai_image",
+  "background_strategy": "mixed",
   "slides": [
-    {
-      "background_prompt": "Candid mirror selfie in gym locker room, person partially visible holding iPhone, fluorescent overhead lighting, slightly overexposed, messy gym bag on bench, iPhone front camera quality, light film grain"
-    },
-    {
-      "background_prompt": "Close-up of phone screen showing messy notes app with crossed out food items, kitchen counter with scattered groceries, warm apartment lighting, slightly out of focus edges, casual and unpolished"
-    },
-    {
-      "background_prompt": "POV looking down at phone on kitchen table, phone screen showing colorful food tracking interface, half-eaten sandwich next to phone, natural window light from left, crumbs on table, iPhone quality"
-    }
+    { "background_prompt": "Candid mirror selfie in gym locker room, person partially visible holding iPhone, fluorescent overhead lighting, slightly overexposed, messy gym bag on bench, iPhone front camera quality, light film grain" },
+    { "background_prompt": "Close-up of phone screen showing messy notes app with crossed out food items, kitchen counter with scattered groceries, warm apartment lighting, slightly out of focus edges, casual and unpolished" },
+    { "background_prompt": "POV looking down at phone on kitchen table, phone screen showing colorful food tracking interface, half-eaten sandwich next to phone, natural window light from left, crumbs on table, iPhone quality" }
   ]
 }
 JSON
 
-bash scripts/generate.sh --project-id "$PROJECT_ID" --slides-json /tmp/slides.json
+GEN=$(bash scripts/generate.sh --project-id "$PROJECT_ID" --slides-json /tmp/slides.json)
+JOB_ID=$(echo "$GEN" | jq -r '.job_id')
 
-# 3. Optional: add film grain for authenticity
+# 3. Poll AI image run until complete (images are rendered async via trigger.dev)
+while true; do
+  STATUS=$(bash scripts/blitzreels.sh GET "/jobs/${JOB_ID}" | jq -r '.status')
+  echo "job status: $STATUS"
+  [[ "$STATUS" == "complete" ]] && break
+  [[ "$STATUS" == "failed" || "$STATUS" == "canceled" ]] && { echo "AI run $STATUS, aborting"; exit 1; }
+  sleep 3
+done
+
+# 4. Optional: apply subtle film grain before export (renders server-side during export)
 bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/backgrounds" \
   '{"style_keyword":"film","span_full_video":true,"film_grain_style":"subtle"}'
 
-# 4. Export as ZIP (clean background images, no text baked in)
+# 5. Export clean ZIP (no baked text — that goes in TikTok natively)
 export BLITZREELS_ALLOW_EXPENSIVE=1
 bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/export" \
   '{"format":"zip","image_formats":["png"],"jpeg_quality":90}'
 
-# 5. Poll job, then download ZIP
-# bash scripts/blitzreels.sh GET "/jobs/${JOB_ID}"
+# 6. Poll the export job, then fetch the export record for the download URL
+# bash scripts/blitzreels.sh GET "/jobs/${EXPORT_JOB_ID}"
 # bash scripts/blitzreels.sh GET "/exports/${EXPORT_ID}"
 ```
+
+For Path B (text baked in — fine for Instagram, acceptable for TikTok at scale), add `title` (and optionally `body`) to each slide entry in the JSON. The API renders them as top + lower-third overlays in 64px white with black stroke.
 
 ## After export: TikTok upload checklist
 

@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "workspace-protected-words",
+  "prompt": "Using the BlitzReels API, remove most programming keywords from workspace protected words and add IA, Claude Code, Codex, and our latest-video terms. Do not change the workspace description.",
+  "assertions": [
+    "Reads /workspace/settings before patching.",
+    "Sends only protected_words or only safe_words, never both.",
+    "Patches only changed fields and does not include description.",
+    "Reads settings back and flags sibling-field drift."
+  ]
+}

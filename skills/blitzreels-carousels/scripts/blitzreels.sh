@@ -37,13 +37,27 @@ if [[ "${METHOD}" =~ ^(POST|PATCH|PUT)$ ]] && is_expensive_path "$PATH_PART"; th
   fi
 fi
 
+# Surface HTTP errors instead of silently returning error JSON with exit 0.
+# We capture the status code, always print the body (so callers see server-provided
+# error messages), then exit nonzero on 4xx/5xx so `set -e` callers abort cleanly.
+TMP_BODY="$(mktemp)"
+trap 'rm -f "$TMP_BODY"' EXIT
+
 if [[ -n "$BODY" ]]; then
-  curl -sS -X "$METHOD" "${BASE_URL}${PATH_PART}" \
+  STATUS=$(curl -sS -o "$TMP_BODY" -w "%{http_code}" -X "$METHOD" "${BASE_URL}${PATH_PART}" \
     -H "Authorization: Bearer $API_KEY" \
     -H "Content-Type: application/json" \
-    -d "$BODY"
+    -d "$BODY")
 else
-  curl -sS -X "$METHOD" "${BASE_URL}${PATH_PART}" \
-    -H "Authorization: Bearer $API_KEY"
+  STATUS=$(curl -sS -o "$TMP_BODY" -w "%{http_code}" -X "$METHOD" "${BASE_URL}${PATH_PART}" \
+    -H "Authorization: Bearer $API_KEY")
+fi
+
+cat "$TMP_BODY"
+
+if [[ "$STATUS" -ge 400 ]]; then
+  echo >&2
+  echo "blitzreels.sh: ${METHOD} ${PATH_PART} returned HTTP ${STATUS}" >&2
+  exit 22
 fi
 

@@ -9,6 +9,8 @@ Create, edit, preview, and manage custom caption themes. Themes are reusable cap
 
 Custom theme IDs work anywhere a preset `style_id` is accepted, including the `/clips` resource.
 
+Public API note: caption-theme REST routes are registered under `/api/v1` in the live OpenAPI as of 2026-05-04. Still preflight `GET /caption-themes` before mutating themes when working against a non-production or older deployment.
+
 ## Canonical Endpoints
 
 | Method | Path | Purpose |
@@ -21,6 +23,8 @@ Custom theme IDs work anywhere a preset `style_id` is accepted, including the `/
 | POST | `/caption-themes/{themeId}/duplicate` | Duplicate an existing theme |
 | POST | `/caption-themes/{themeId}/set-default` | Set as user's default theme |
 | POST | `/caption-themes/preview` | Render preview frame from raw settings |
+
+If these endpoints ever 404 on a target deployment, known wrong alternatives include `/workspace/caption-themes`, `/workspace/themes`, and `/themes`. Do not call those by analogy; fall back to per-project style copy/update with `/projects/{id}/captions/style`.
 
 ## Agent Workflow
 

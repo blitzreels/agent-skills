@@ -25,6 +25,11 @@ Commands:
   add-media     <projectId> <mediaId> [startSec]        Add media to timeline
   add-broll     <projectId> <JSON>                      Add B-roll from JSON body
   captions      <projectId> <presetId>                  Apply caption style preset
+  words         <projectId> [limit] [offset]            List caption words
+  transcript-corrections <projectId> <assetId> <JSON>   Apply single-word transcript replacements
+  list-assets   [limit] [offset] [assetType]            List workspace media assets
+  get-asset     <assetId>                               Get workspace media asset details
+  workspace-settings [JSON_PATCH]                       Get or patch workspace settings
   export        <projectId> [--resolution R]            Export project (polls until done)
 
 Arguments:
@@ -61,7 +66,7 @@ poll_job() {
     STATUS=$(echo "$STATUS_JSON" | jq -r '.status')
 
     case "$STATUS" in
-      completed|done|success)
+      complete|completed|done|success)
         echo "  ${LABEL} complete!"
         echo "$STATUS_JSON"
         return 0
@@ -99,7 +104,7 @@ case "$COMMAND" in
     PROJECT_ID="$1"
     URL="$2"
     NAME="${3:-}"
-    BODY="{\"url\":$(echo "$URL" | jq -Rs .)"
+    BODY="{\"url\":$(echo "$URL" | jq -Rs .)}"
     if [[ -n "$NAME" ]]; then
       BODY="{\"url\":$(echo "$URL" | jq -Rs .),\"name\":$(echo "$NAME" | jq -Rs .)}"
     fi
@@ -150,7 +155,7 @@ case "$COMMAND" in
       exit 1
     fi
     bash "$BLITZREELS_SH" POST "/projects/$1/timeline/trim" \
-      "{\"item_id\":\"$2\",\"start_delta_seconds\":$3,\"end_delta_seconds\":$4}"
+      "{\"timeline_item_id\":\"$2\",\"trim_start_delta_seconds\":$3,\"trim_end_delta_seconds\":$4}"
     ;;
 
   split)
@@ -159,7 +164,7 @@ case "$COMMAND" in
       exit 1
     fi
     bash "$BLITZREELS_SH" POST "/projects/$1/timeline/split" \
-      "{\"item_id\":\"$2\",\"at_seconds\":$3}"
+      "{\"timeline_item_id\":\"$2\",\"split_at_seconds\":$3}"
     ;;
 
   delete-item)
@@ -179,7 +184,7 @@ case "$COMMAND" in
     MEDIA_ID="$2"
     START="${3:-0}"
     bash "$BLITZREELS_SH" POST "/projects/${PROJECT_ID}/timeline/media" \
-      "{\"media_id\":\"${MEDIA_ID}\",\"start_seconds\":${START}}"
+      "{\"items\":[{\"asset_id\":\"${MEDIA_ID}\",\"start_seconds\":${START}}]}"
     ;;
 
   add-broll)
@@ -197,6 +202,52 @@ case "$COMMAND" in
     fi
     bash "$BLITZREELS_SH" POST "/projects/$1/captions" \
       "{\"style_id\":\"$2\"}"
+    ;;
+
+  words)
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: editor.sh words <projectId> [limit] [offset]" >&2
+      exit 1
+    fi
+    LIMIT="${2:-100}"
+    OFFSET="${3:-0}"
+    bash "$BLITZREELS_SH" GET "/projects/$1/captions/words?limit=${LIMIT}&offset=${OFFSET}"
+    ;;
+
+  transcript-corrections)
+    if [[ $# -lt 3 ]]; then
+      echo "Usage: editor.sh transcript-corrections <projectId> <assetId> <JSON>" >&2
+      echo "JSON example: '{\"replacements\":[{\"from\":\"Cloud\",\"to\":\"Claude\"}]}'" >&2
+      exit 1
+    fi
+    PROJECT_ID="$1"
+    ASSET_ID="$2"
+    PATCH_JSON="$3"
+    BODY=$(echo "$PATCH_JSON" | jq --arg media_asset_id "$ASSET_ID" '. + {media_asset_id: $media_asset_id}')
+    bash "$BLITZREELS_SH" POST "/projects/${PROJECT_ID}/transcript/corrections" "$BODY"
+    ;;
+
+  list-assets)
+    LIMIT="${1:-50}"
+    OFFSET="${2:-0}"
+    ASSET_TYPE="${3:-all}"
+    bash "$BLITZREELS_SH" GET "/workspace/media/assets?limit=${LIMIT}&offset=${OFFSET}&asset_type=${ASSET_TYPE}"
+    ;;
+
+  get-asset)
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: editor.sh get-asset <assetId>" >&2
+      exit 1
+    fi
+    bash "$BLITZREELS_SH" GET "/workspace/media/assets/$1"
+    ;;
+
+  workspace-settings)
+    if [[ $# -lt 1 ]]; then
+      bash "$BLITZREELS_SH" GET "/workspace/settings"
+    else
+      bash "$BLITZREELS_SH" PATCH "/workspace/settings" "$1"
+    fi
     ;;
 
   export)
@@ -232,7 +283,7 @@ case "$COMMAND" in
       EXPORT_STATUS=$(echo "$EXPORT_STATUS_JSON" | jq -r '.status')
 
       case "$EXPORT_STATUS" in
-        completed|done|success)
+        complete|completed|done|success)
           DOWNLOAD_URL=$(echo "$EXPORT_STATUS_JSON" | jq -r '.download_url // .downloadUrl // .url')
           echo "  Export complete!"
           echo "  Download: ${DOWNLOAD_URL}"

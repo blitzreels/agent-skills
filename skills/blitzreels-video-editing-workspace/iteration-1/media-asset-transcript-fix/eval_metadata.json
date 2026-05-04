@@ -1,0 +1,11 @@
+{
+  "eval_id": 3,
+  "eval_name": "media-asset-transcript-fix",
+  "prompt": "Find asset e6d63547-e791-4673-9fdf-2e34ee867d9e in the media library, inspect its transcript/captions, and fix Cloud Code to Claude Code if needed.",
+  "assertions": [
+    "Uses /workspace/media/assets/{assetId} for asset lookup.",
+    "Respects workspace media limit max 100 when listing assets.",
+    "Uses only single-token transcript corrections unless exact word IDs are available.",
+    "Falls back from /captions/words failures to context or transcript segments and verifies visually."
+  ]
+}

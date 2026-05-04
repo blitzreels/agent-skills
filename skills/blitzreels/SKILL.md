@@ -1,6 +1,6 @@
 ---
 name: blitzreels
-description: BlitzReels AI video generation API umbrella skill: auth, OpenAPI browsing, and links to specialized BlitzReels skills.
+description: BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, carousels, or motion graphics.
 ---
 
 # BlitzReels Skill
@@ -33,15 +33,23 @@ Get your API key from: https://blitzreels.com/settings/api
 - `https://www.blitzreels.com/llms-full.txt`
 - `https://www.blitzreels.com/api/openapi.json` (source of truth)
 
-## Agent Playbook (Browse Then Call)
+## Agent Playbook (Discover Then Call)
 
-When integrating with BlitzReels, do not guess endpoints or request fields. Use OpenAPI as the source of truth:
+When integrating with BlitzReels, do not guess endpoints or request fields. First try OpenAPI, then fall back to `llms-full.txt` and the installed skills if OpenAPI is unavailable:
 
 1. Fetch OpenAPI: `https://www.blitzreels.com/api/openapi.json`
-2. Search for the endpoint you need by keyword (path, tag, summary)
-3. Inspect request/response schema for required fields
-4. Call the endpoint with `Authorization: Bearer $BLITZREELS_API_KEY`
-5. If the operation returns a `job_id`, poll `/jobs/{job_id}` until complete (or use webhooks)
+2. If OpenAPI returns `paths: {}` or an `OpenAPI generation error`, treat it as unavailable, not as proof the API has no endpoints.
+3. Search `https://www.blitzreels.com/llms-full.txt` and this skill bundle before calling anything.
+4. Inspect request/response schemas for required fields. Prefer documented paths over analogy-based guesses.
+5. Call the endpoint with `Authorization: Bearer $BLITZREELS_API_KEY`.
+6. If the operation returns a `job_id`, poll `/jobs/{job_id}` until complete. If it returns an `export_id`, poll `/exports/{export_id}`.
+7. Verify state with read endpoints after write calls, especially workspace settings and timeline/caption edits.
+
+## API Key Handling
+
+- Do not store raw `br_live_...` keys in memory, notes, eval outputs, or handoff files.
+- Put the key in `BLITZREELS_API_KEY` for the current shell only.
+- Redact keys in reports (`br_live_2c68...c5bb`) and recommend rotation if a key was pasted into shared logs.
 
 ## Full API Reference (OpenAPI)
 
@@ -77,6 +85,12 @@ curl -sS https://www.blitzreels.com/api/openapi.json \
   | grep -iE 'caption|export|timeline|overlay|template|webhook|job|playground' || true
 ```
 
+If this returns no paths, use the fallback index:
+
+```bash
+curl -sS https://www.blitzreels.com/llms-full.txt | grep -iE 'caption|export|timeline|workspace|media|project'
+```
+
 Inspect one endpoint in detail:
 
 ```bash
@@ -93,6 +107,20 @@ This skill includes a helper script so you don't have to retype headers:
 # From this skill directory:
 bash scripts/blitzreels.sh POST /projects '{"name":"My Video","aspect_ratio":"9:16"}'
 ```
+
+## Known Public API Caveats (checked 2026-05-04)
+
+These are dogfood findings checked against the live OpenAPI. Re-check OpenAPI before relying on any caveat, because the public API is moving quickly.
+
+- OpenAPI is currently the source of truth. If it ever returns `paths: {}` with an `OpenAPI generation error`, treat that as a docs-generation failure and fall back to `llms-full.txt` plus installed skills.
+- Caption-theme REST routes are now public: `/caption-themes`, `/caption-themes/{themeId}`, `/caption-themes/preview`, duplicate, and set-default are registered.
+- Project metadata update is now public: `PATCH /projects/{projectId}` accepts `name` and `description`.
+- Workspace media asset details use `/workspace/media/assets/{assetId}`. Short guesses like `/assets/{id}`, `/media/{id}`, `/uploads/{id}`, and `/video-sources/{id}` are not registered.
+- Workspace media listing caps `limit` at `100`.
+- Workspace settings `GET` returns both `safeWords` and `protected_words`, but `PATCH /workspace/settings` accepts only one of `safe_words` or `protected_words`.
+- Transcript bulk corrections support single-token `replacements` and same-token-count `phrase_replacements`. They do not support token-count-changing edits such as deleting/fusing words.
+- Caption-block CRUD is not public. There is no `GET /projects/{projectId}/captions` list route, `GET/PATCH /captions/{captionId}`, or `PATCH /projects/{projectId}/captions/{captionId}`. Use `/captions/words`, `/captions/words/text`, `/captions/words/style`, `/captions/words/emphasis`, or transcript corrections.
+- Public timeline media insertion uses an `items` array with `asset_id` and supports media-library image/video insertions. Audio insertion is public at `POST /projects/{projectId}/timeline/audio`, but it expects an existing workspace audio asset; do not guess `/audio` or `/music`.
 
 ## Commands
 

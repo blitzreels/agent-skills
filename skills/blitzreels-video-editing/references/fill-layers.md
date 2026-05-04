@@ -167,8 +167,7 @@ Fill layers are background elements placed behind video content (layer index 5).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/projects/{id}/fill-layers/presets` | List all presets by category |
-| GET | `/projects/{id}/fill-layers` | List existing fill layers |
-| POST | `/projects/{id}/fill-layers` | Add fill layer (preset or custom) |
-| PATCH | `/projects/{id}/fill-layers/{lid}` | Update fill layer settings |
-| DELETE | `/projects/{id}/fill-layers/{lid}` | Delete fill layer |
+| GET | `/projects/{id}/backgrounds` | List existing background/fill layers |
+| POST | `/projects/{id}/backgrounds` | Add background/fill layer |
+
+The public API uses `/backgrounds`, not `/fill-layers`. There is no public fill-layer preset list, patch, or delete route in the live OpenAPI. Prefer `style_keyword` or explicit settings when adding a background.

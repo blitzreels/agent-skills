@@ -6,26 +6,31 @@
 |--------|------|-------------|
 | POST | `/projects/{id}/timeline/trim` | Trim item by start/end deltas (seconds) |
 | POST | `/projects/{id}/timeline/split` | Split item at timestamp (non-destructive) |
-| POST | `/projects/{id}/timeline/media` | Add media asset to timeline |
+| POST | `/projects/{id}/timeline/media` | Insert media-library image/video items with `items[]` |
 | DELETE | `/projects/{id}/timeline/items/{itemId}` | Delete timeline item |
-| PATCH | `/projects/{id}/timeline/items/{itemId}` | Update item properties |
-| POST | `/projects/{id}/timeline/items/batch-update` | Batch update multiple items |
+| POST | `/projects/{id}/timeline/move` | Move one item |
+| POST | `/projects/{id}/timeline/transform` | Update one item position/dimensions |
+| POST | `/projects/{id}/timeline/edits` | Generic trim/split/delete/move/transform action |
+| POST | `/projects/{id}/timeline/batch-trim` | Batch trim items |
+| POST | `/projects/{id}/timeline/batch-move` | Batch move items |
+| POST | `/projects/{id}/timeline/batch-transform` | Batch transform items |
+| POST | `/projects/{id}/timeline/batch-delete` | Batch delete items |
 
 ### Trim Input
 ```json
 {
-  "item_id": "string",
-  "start_delta_seconds": 0.5,
-  "end_delta_seconds": -1.2
+  "timeline_item_id": "string",
+  "trim_start_delta_seconds": 0.5,
+  "trim_end_delta_seconds": -1.2
 }
 ```
-Positive `start_delta` trims from beginning; negative `end_delta` trims from end.
+Positive `trim_start_delta_seconds` trims from beginning; negative `trim_end_delta_seconds` trims from end.
 
 ### Split Input
 ```json
 {
-  "item_id": "string",
-  "at_seconds": 15.5
+  "timeline_item_id": "string",
+  "split_at_seconds": 15.5
 }
 ```
 Creates two items from one at the split point.
@@ -36,67 +41,68 @@ Creates two items from one at the split point.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| PATCH | `/projects/{id}/timeline/items/{itemId}/volume` | Set volume (0–2.0) |
-| PATCH | `/projects/{id}/timeline/items/{itemId}/position` | Set position on timeline |
-| PATCH | `/projects/{id}/timeline/items/{itemId}/dimensions` | Set width/height |
-| PATCH | `/projects/{id}/timeline/items/{itemId}/transform` | Set scale, rotation, position |
-| POST | `/projects/{id}/timeline/items/batch-layer` | Batch update layer indices |
+| POST | `/projects/{id}/timeline/move` | Set start time and optional layer index |
+| POST | `/projects/{id}/timeline/transform` | Set position and width/height |
+| POST | `/projects/{id}/timeline/batch-move` | Batch update start/layer |
+| POST | `/projects/{id}/timeline/batch-transform` | Batch update position/dimensions |
+
+Some dashboard/internal endpoints are not public. If a route is not in OpenAPI, do not call it. Prefer `/timeline/edits`, `/timeline/move`, `/timeline/transform`, or the batch endpoints above for public timeline changes.
+
+### Timeline Media Input
+
+Use `POST /projects/{id}/timeline/media` for visual media library insertions, not audio tracks:
+
+```json
+{
+  "items": [
+    {
+      "asset_id": "uuid",
+      "start_seconds": 12.5,
+      "duration_seconds": 3,
+      "position_preset": "full-screen",
+      "animation_preset": "fadeIn"
+    }
+  ],
+  "allow_duplicate": true
+}
+```
+
+Known constraints:
+- Use `asset_id`, not `media_id`.
+- The endpoint is backed by the B-roll/media insertion tool and supports image/video assets from the media library.
+- Audio insertion is public at `POST /projects/{id}/timeline/audio`, but it expects an existing workspace audio asset. Do not guess `/audio` or `/music`.
 
 ---
 
 ## Clip Management
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/clips` | Add clip to timeline |
-| DELETE | `/projects/{id}/timeline/clips/{clipId}` | Remove clip |
-| POST | `/projects/{id}/timeline/clips-with-captions` | Add clip + auto-add captions |
-| DELETE | `/projects/{id}/timeline/clips-with-captions/{clipId}` | Remove clip + associated captions |
-| POST | `/projects/{id}/timeline/replace-media` | Replace backing media asset |
+Use `/clips` for the high-level clipping flow, or `/workspace/media/assets/{assetId}/short-suggestions/{suggestionId}/apply` for applying a selected suggestion. The old timeline clip-management routes (`/timeline/clips`, `/timeline/clips-with-captions`, `/timeline/replace-media`) are not public.
 
 ---
 
 ## Packing & Ordering
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/pack-clips` | Remove gaps between clips on a track |
-| POST | `/projects/{id}/timeline/pack-tracks` | Consolidate tracks (remove empty) |
-| POST | `/projects/{id}/timeline/items/bulk-commit-drag` | Commit drag operation positions |
+No public pack/auto-order endpoint is registered today. Use explicit `move`/`batch-move` operations when you need to remove gaps or reorder items.
 
 ---
 
 ## AI-Powered Features
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/silence-detection` | Detect silent regions |
-| POST | `/projects/{id}/timeline/apply-silence-plan` | Cut detected silences |
-| POST | `/projects/{id}/timeline/mistake-detection` | AI-detect verbal mistakes |
-| POST | `/projects/{id}/timeline/apply-mistake-plan` | Cut detected mistakes |
-| POST | `/projects/{id}/timeline/caption-recut` | Generate recut plan from captions |
-| POST | `/projects/{id}/timeline/apply-caption-recut` | Apply caption-based recut |
+No public timeline silence-detection, mistake-detection, apply-silence-plan, apply-mistake-plan, or caption-recut endpoints are registered today. Use the editor UI or higher-level clipping flow when those workflows are required.
 
 ### Silence Detection Flow
-1. `POST /timeline/silence-detection` → returns plan with silent regions
-2. Review plan (optional: filter by duration threshold)
-3. `POST /timeline/apply-silence-plan` with plan → removes silences
+1. Use the dashboard/editor UI or clipping flow for silence cleanup.
+2. If you need an API-only workaround, read transcript/context and use explicit trim/split/delete/move operations.
 
 ### Mistake Detection Flow
-1. `POST /timeline/mistake-detection` → AI analyzes transcript for verbal mistakes
-2. Returns verdicts per segment (keep/cut)
-3. `POST /timeline/apply-mistake-plan` with verdicts → cuts mistakes
+1. Use transcript/context reads to identify candidate mistake regions manually.
+2. Apply edits with explicit trim/split/delete/move operations.
 
 ---
 
 ## Effects
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/effects/zoom` | Add zoom effect to item |
-| POST | `/projects/{id}/timeline/effects/mask` | Add mask effect |
-| POST | `/projects/{id}/timeline/effects/color-grade` | Add color grade effect |
-| PATCH | `/projects/{id}/timeline/effects/{effectId}` | Update effect settings |
+Timeline effect CRUD is not public in the live OpenAPI. Use public overlay/background/motion endpoints where possible, or the dashboard for zoom/mask/color-grade effect editing.
 
 ---
 
@@ -106,10 +112,9 @@ Animate properties over time with keyframes.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/projects/{id}/timeline/items/{itemId}/keyframes` | List keyframes |
-| POST | `/projects/{id}/timeline/items/{itemId}/keyframes` | Create keyframe |
-| PATCH | `/projects/{id}/timeline/keyframes/{kfId}` | Update keyframe |
-| DELETE | `/projects/{id}/timeline/keyframes/{kfId}` | Delete keyframe |
+| GET | `/projects/{id}/keyframes?timeline_item_id={itemId}` | List keyframes |
+
+Only keyframe listing is public in the live OpenAPI. Creation/update/delete are dashboard/internal until OpenAPI lists them.
 
 ### Keyframe Properties
 `positionX` · `positionY` · `scale` · `rotation` · `opacity`
@@ -131,22 +136,13 @@ Animate properties over time with keyframes.
 
 ## Undo / Redo
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/undo` | Undo last action |
-| POST | `/projects/{id}/timeline/redo` | Redo undone action |
-| GET | `/projects/{id}/timeline/can-undo` | Check if undo available |
-| GET | `/projects/{id}/timeline/can-redo` | Check if redo available |
+Undo/redo routes are not public in the live OpenAPI. Verify state with read endpoints after each write.
 
 ---
 
 ## Watermarks
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/projects/{id}/timeline/watermark` | Add watermark |
-| PATCH | `/projects/{id}/timeline/watermark/{wid}` | Update watermark |
-| DELETE | `/projects/{id}/timeline/watermark/{wid}` | Remove watermark |
+Watermark CRUD routes are not public in the live OpenAPI. Use the dashboard or project templates/overlays if a public workflow exists for the specific case.
 
 ---
 

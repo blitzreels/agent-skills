@@ -1,6 +1,6 @@
 ---
 name: blitzreels-video-editing
-description: Video editing workflows with BlitzReels API — upload, transcribe, timeline editing, captions, overlays, backgrounds, export, and source-view ROI-aware reframing for stronger clipping flows.
+description: Video editing workflows with BlitzReels API: upload, transcribe, timeline editing, captions, transcript corrections, media-library asset lookup, overlays, backgrounds, export, workspace settings, and source-view ROI-aware reframing. Use this whenever a user asks an agent to edit an existing BlitzReels project, copy fixes from a previous video, manipulate timeline items, inspect media assets, repair captions, change workspace protected words/defaults, or diagnose API editing failures.
 ---
 
 # BlitzReels Video Editing
@@ -10,6 +10,8 @@ Edit videos via the BlitzReels API: upload media, transcribe, edit timeline, app
 If the task is specifically long-form to shorts, podcast-to-shorts, suggestion-backed clipping, or public automatic-layout reframe planning, prefer the `blitzreels-clipping` skill first and come back here for lower-level timeline work.
 
 Important: project preview and visual QA endpoints now exist. Use them when an agent needs to verify framing, caption placement, or layout visually before export.
+
+Important: do not infer endpoint names from dashboard URLs or likely nouns. Public API coverage is narrower than the product UI. Search this skill, `llms-full.txt`, and `references/api-dogfood-caveats.md` before trying a new path.
 
 ## Quick Start
 
@@ -35,10 +37,12 @@ bash scripts/editor.sh export PROJECT_ID --resolution 1080p
 4. **Transcribe** — `editor.sh transcribe` generates word-level captions
 5. **Get context** — `editor.sh context` to see timeline state
 6. **Edit timeline** — trim, split, delete, reorder, auto-remove silences
-7. **Apply captions** — `editor.sh captions <presetId>` for styled subtitles
+7. **Apply/copy captions** — `editor.sh captions <presetId>` for styled subtitles, or copy settings with `GET/PATCH /projects/{id}/captions/style`
 8. **Add overlays** — text overlays, motion code, motion graphics
 9. **Add background** — fill layers (gradients, cinematic, patterns)
 10. **Export** — `editor.sh export` renders final video with download URL
+
+After any correction or style copy, verify with `editor.sh context PROJECT_ID full` and preview frames before export. Caption writes can change chunking; the transcript may be correct while the rendered caption blocks need manual split/repair.
 
 ## Scripts
 
@@ -58,6 +62,11 @@ Subcommand wrapper for common editing operations.
 | `add-media` | `<projectId> <mediaId> [startSec]` | Add media to timeline |
 | `add-broll` | `<projectId> <JSON>` | Add B-roll clip |
 | `captions` | `<projectId> <presetId>` | Apply caption preset |
+| `words` | `<projectId> [limit] [offset]` | List caption words when endpoint is healthy |
+| `transcript-corrections` | `<projectId> <assetId> <JSON>` | Apply transcript replacements |
+| `list-assets` | `[limit] [offset] [assetType]` | List workspace media assets |
+| `get-asset` | `<assetId>` | Get workspace media asset detail |
+| `workspace-settings` | `[JSON_PATCH]` | Get or patch workspace settings |
 | `export` | `<projectId> [--resolution R]` | Export + poll + download URL |
 
 Run `bash scripts/editor.sh --help` for full usage.
@@ -86,9 +95,11 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 |--------|------|-------------|
 | POST | `/projects` | Create project |
 | GET | `/projects/{id}` | Get project details |
-| PATCH | `/projects/{id}` | Update project settings |
 | DELETE | `/projects/{id}` | Delete project |
 | GET | `/projects` | List projects |
+| PATCH | `/projects/{id}` | Update project metadata (`name`, `description`) |
+
+`PATCH /projects/{id}` is metadata-only. Use `/projects/{id}/settings` and `/projects/{id}/captions/style` for editor/render settings.
 
 ### Media
 
@@ -97,6 +108,10 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | POST | `/projects/{id}/media` | Import media from URL |
 | POST | `/projects/{id}/upload/presigned` | Get presigned upload URL |
 | POST | `/projects/{id}/upload/finalize` | Finalize presigned upload |
+| GET | `/workspace/media/assets` | List workspace media assets (`limit` max 100) |
+| GET | `/workspace/media/assets/{assetId}` | Get media asset details and signed file URL |
+
+Use `/workspace/media/assets/{assetId}` for asset lookup. Do not try `/assets/{id}`, `/media/{id}`, `/uploads/{id}`, `/videos/{id}`, `/source-videos/{id}`, or `/long-videos/{id}`.
 
 ### Transcription
 
@@ -105,7 +120,11 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | POST | `/projects/{id}/transcribe` | Start transcription job |
 | GET | `/jobs/{jobId}` | Poll job status |
 | GET | `/projects/{id}/context?mode=transcript` | Get transcript |
-| POST | `/projects/{id}/captions/regenerate` | Re-transcribe media |
+| GET | `/projects/{id}/transcript/segments` | Get transcript segments |
+| POST | `/projects/{id}/transcript/corrections` | Bulk transcript corrections |
+| POST | `/projects/{id}/transcribe` | Re-transcribe media by media asset |
+
+Transcript corrections accept single-token `replacements` and same-token-count `phrase_replacements`. For `"Cloud Code" -> "Claude Code"`, use `phrase_replacements` with `from_words: ["Cloud", "Code"]` and `to_words: ["Claude", "Code"]`. Token-count-changing edits such as `"de Expo" -> "d'Expo"` are not supported by transcript corrections; use precise caption word edits or the UI.
 
 ### Captions
 
@@ -114,46 +133,66 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | POST | `/projects/{id}/captions` | Apply caption preset |
 | GET | `/projects/{id}/captions/style` | Get current style |
 | PATCH | `/projects/{id}/captions/style` | Update style settings |
-| GET | `/projects/{id}/captions/presets` | List presets by category |
-| PATCH | `/projects/{id}/captions/{captionId}` | Update caption words/timing |
-| DELETE | `/projects/{id}/captions/{captionId}` | Delete caption |
+| GET | `/projects/{id}/captions/words` | List caption words for precise edits |
 | POST | `/projects/{id}/captions/words/emphasis` | Emphasize specific words |
+| POST | `/projects/{id}/captions/words/text` | Update one caption word by ID |
+| POST | `/projects/{id}/captions/words/style` | Update per-word styling |
+
+There is no public caption-block CRUD today: no `GET /projects/{id}/captions`, no `PATCH /projects/{id}/captions/{captionId}`, no `DELETE /projects/{id}/captions/{captionId}`, and no global `GET/PATCH /captions/{captionId}`. To target a rendered caption block, read `GET /projects/{id}/context?mode=full`, find the caption timeline item by timestamp/label, then call `GET /projects/{id}/captions/words?timeline_item_id=...` and update exact `word_id`s with `/captions/words/text`.
 
 ### Timeline Editing
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/projects/{id}/timeline/media` | Add media to timeline |
+| POST | `/projects/{id}/timeline/media` | Insert media-library image/video items with `items[]` |
 | POST | `/projects/{id}/timeline/trim` | Trim item by deltas |
 | POST | `/projects/{id}/timeline/split` | Split item at timestamp |
+| POST | `/projects/{id}/timeline/move` | Move item start/layer |
+| POST | `/projects/{id}/timeline/transform` | Set position/dimensions |
 | DELETE | `/projects/{id}/timeline/items/{itemId}` | Delete item |
-| PATCH | `/projects/{id}/timeline/items/{itemId}` | Update item |
-| POST | `/projects/{id}/timeline/items/batch-update` | Batch update items |
-| PATCH | `/projects/{id}/timeline/items/{itemId}/volume` | Set volume |
-| PATCH | `/projects/{id}/timeline/items/{itemId}/transform` | Set transform |
-| POST | `/projects/{id}/timeline/pack-clips` | Remove gaps |
-| POST | `/projects/{id}/timeline/silence-detection` | Detect silences |
-| POST | `/projects/{id}/timeline/mistake-detection` | AI mistake detection |
-| POST | `/projects/{id}/timeline/caption-recut` | Caption-based recut plan |
+| POST | `/projects/{id}/timeline/edits` | Generic trim/split/delete/move/transform action |
+| POST | `/projects/{id}/timeline/batch-trim` | Batch trim items |
+| POST | `/projects/{id}/timeline/batch-move` | Batch move items |
+| POST | `/projects/{id}/timeline/batch-transform` | Batch transform items |
+| POST | `/projects/{id}/timeline/batch-delete` | Batch delete items |
+| POST | `/projects/{id}/timeline/audio` | Add an existing workspace audio asset |
+| GET | `/projects/{id}/keyframes?timeline_item_id=...` | List item keyframes |
+
+`/timeline/media` is not a background-audio endpoint. It expects:
+
+```json
+{
+  "items": [
+    {
+      "asset_id": "media-asset-uuid",
+      "start_seconds": 3.2,
+      "duration_seconds": 4,
+      "position_preset": "full-screen"
+    }
+  ]
+}
+```
+
+It currently supports visual media library assets. For audio, use `POST /projects/{id}/timeline/audio` with an existing workspace audio asset. Do not guess `/audio` or `/music`.
 
 ### Overlays — Text, Motion Code, Motion Graphics
 
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/projects/{id}/text-overlays` | List text overlays |
 | POST | `/projects/{id}/text-overlays` | Add text overlay |
-| PATCH | `/projects/{id}/text-overlays/{oid}` | Update text overlay |
-| DELETE | `/projects/{id}/text-overlays/{oid}` | Remove text overlay |
+| POST | `/projects/{id}/overlays` | Add generic overlay |
+| GET | `/projects/{id}/motion-code` | List motion code blocks |
 | POST | `/projects/{id}/motion-code` | Add animated code block |
-| PATCH | `/projects/{id}/motion-code/{cid}` | Update code block |
+| GET | `/projects/{id}/motion-graphics` | List motion graphics |
 | POST | `/projects/{id}/motion-graphics` | Add motion graphic |
-| PATCH | `/projects/{id}/motion-graphics/{gid}` | Update motion graphic |
 
 ### Backgrounds
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/projects/{id}/fill-layers` | Add fill layer |
-| PATCH | `/projects/{id}/fill-layers/{lid}` | Update fill layer |
+| GET | `/projects/{id}/backgrounds` | List background layers |
+| POST | `/projects/{id}/backgrounds` | Add background/fill layer |
 
 ### Context & State
 
@@ -165,7 +204,6 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | POST | `/projects/{id}/preview-frames` | Render multiple still previews |
 | POST | `/projects/{id}/visual-analysis` | Run structured frame QA |
 | GET | `/projects/{id}/visual-debug` | Get machine-readable layout geometry |
-| POST | `/projects/{id}/timeline/undo` | Undo last action |
 
 ### Media View Repair
 
@@ -190,14 +228,32 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | DELETE | `/projects/{id}/exports` | Delete all exports |
 | GET | `/jobs/{jobId}` | Generic job polling |
 
+### Workspace Settings
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/workspace/settings` | Read workspace name, description, protected words, icon, defaults |
+| PATCH | `/workspace/settings` | Patch only fields that should change |
+| POST | `/workspace/icon/upload/init` | Create presigned workspace icon upload |
+| DELETE | `/workspace/icon` | Remove workspace icon |
+
+When patching protected vocabulary, send only one alias:
+
+```json
+{
+  "protected_words": ["IA", "Claude", "Codex"]
+}
+```
+
+Do not mirror a GET response by sending both `safe_words` and `protected_words`; the write endpoint rejects that. Patch only changed fields so sibling fields such as `description` cannot be accidentally rewritten by a caller.
+
 ### Effects & Keyframes
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/projects/{id}/timeline/effects/zoom` | Add zoom effect |
-| POST | `/projects/{id}/timeline/effects/mask` | Add mask effect |
-| POST | `/projects/{id}/timeline/effects/color-grade` | Add color grade |
-| POST | `/projects/{id}/timeline/items/{itemId}/keyframes` | Create keyframe |
+| GET | `/projects/{id}/keyframes?timeline_item_id={itemId}` | List keyframes |
+
+Timeline effect CRUD is not public in the live OpenAPI. Use public overlay/background/motion endpoints where possible, or the dashboard for zoom/mask/color-grade effect editing.
 
 ---
 
@@ -248,15 +304,16 @@ bash scripts/blitzreels.sh POST /projects/PROJECT_ID/upload/finalize \
 - **Caption presets**: 30+ presets across 6 categories — see `references/caption-styles.md`
 - **Active word animations**: highlight, scale, glow, lift, bounce, punch, slam, elastic, shake, none
 - **Motion code themes**: github-dark, one-dark, dracula, nord, monokai, tokyo-night
-- **Fill layer presets**: 38+ across 7 categories — see `references/fill-layers.md`
+- **Background recipes**: 38+ fill-layer-style background examples across 7 categories — see `references/fill-layers.md`
 - **Timeline layer order**: caption(0) → effect(1) → image(2) → video(3) → audio(4) → background(5)
 
 ## References
 
 - `references/clipping.md` — Long-form to short workflow, podcast QA loop, preview/repair endpoints
+- `references/api-dogfood-caveats.md` — Verified public API gotchas from real agent usage
 - `references/caption-styles.md` — All 30+ presets, CaptionStyleSettings schema, animations
 - `references/overlays.md` — Text overlays, motion code, motion graphics schemas
-- `references/fill-layers.md` — 38+ background presets, FillLayerSettings schema
+- `references/fill-layers.md` — 38+ background recipes and FillLayerSettings schema; public API route is `/backgrounds`
 - `references/timeline-ops.md` — Timeline endpoints, AI features, keyframes, effects
 - `references/export-settings.md` — Export params, codecs, polling pattern
 - `examples/edit-uploaded-video.md` — Full upload→edit→export walkthrough

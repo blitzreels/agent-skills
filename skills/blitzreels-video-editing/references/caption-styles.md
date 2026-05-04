@@ -154,8 +154,10 @@
 |--------|------|-------------|
 | GET | `/projects/{id}/captions/style` | Get current caption style |
 | PATCH | `/projects/{id}/captions/style` | Update caption style settings |
-| GET | `/projects/{id}/captions/presets` | List all presets by category |
 | POST | `/projects/{id}/captions` | Apply preset by `style_id` |
-| PATCH | `/projects/{id}/captions/{captionId}` | Update caption words/timing |
-| DELETE | `/projects/{id}/captions/{captionId}` | Delete a caption |
+| GET | `/projects/{id}/captions/words` | List caption words, optionally filtered by `timeline_item_id` |
+| POST | `/projects/{id}/captions/words/text` | Update one caption word by `word_id` |
 | POST | `/projects/{id}/captions/words/emphasis` | Set emphasis on specific words |
+| POST | `/projects/{id}/captions/words/style` | Set per-word style overrides |
+
+The public API does not expose caption-block CRUD today. Do not call guessed routes such as `/captions/{captionId}`, `/projects/{id}/captions/{captionId}`, or `/projects/{id}/captions/presets`. Use project context to find the caption timeline item, then list/update words by `timeline_item_id` and `word_id`.

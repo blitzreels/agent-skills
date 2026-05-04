@@ -1,165 +1,49 @@
 ---
 name: blitzreels-carousels
-description: Create TikTok and Instagram carousel slideshows via the BlitzReels API. Use when the user wants to create carousels, slideshows, slide-based content, image posts with text overlays, TikTok photo mode content, or batch-produce social media image content at scale. Also use when the user mentions carousel, slideshow, slides, TikTok photos, Instagram carousel, swipeable content, or "images + text" social posts.
+description: Build slide-based social content (backgrounds + text, exported as image ZIPs) via the BlitzReels API. Use whenever the user wants to produce multi-image posts for TikTok, Instagram, LinkedIn, or Pinterest — carousels, slideshows, photo dumps, photo-mode posts, swipe-through decks, slide decks for social, or "images + text" posts. Also trigger when the user says "break this blog post / thread / video into slides," "turn this into a carousel," "make a swipe post," "produce slides to post," or asks to batch-produce image posts at scale. Trigger even if the word "carousel" is not used — anything that ends up as a multi-image social post with captions belongs here, since format-specific rules (safe zones, readability, TikTok native-text distribution) materially change the output.
 ---
 
 # BlitzReels Carousels
 
 Create still-slide carousels for TikTok and Instagram: background images + text overlays, exported as **individual slide images** (ZIP of PNG/JPG).
 
-## Why this format matters
+## Happy path
 
-Slideshows are the most scalable content format on social media right now. Images + text — that's it. The production barrier is low so creators post consistently. The swipe mechanic keeps viewers engaged longer than passive video. And the algorithm is pushing them harder than almost any other format.
+Two shell helpers. Pick one based on where the background images come from.
 
-One well-structured slideshow campaign can generate millions of organic views with zero ad spend. The format lets you walk someone through a product or idea naturally, slide by slide, without it ever feeling like an ad.
+### `generate.sh` — one-call (default)
 
-## Three things that separate 10k views from 1M
-
-### 1. Images must look native — not like AI slop
-
-Default AI image output looks washed out and obviously synthetic. People scroll past in half a second. The fix is specificity: mimic a real camera, real lighting, real mess.
-
-When using the `/carousels/generate` endpoint with `background_strategy: "ai_image"`, write background prompts that describe a real scene a real person would photograph:
-
-**Bad prompts (AI slop):**
-- "Professional business background"
-- "Clean modern gradient"
-- "Beautiful landscape"
-
-**Good prompts (native-looking):**
-- "Candid selfie angle, messy bedroom background, warm lamp lighting, slightly grainy, iPhone front camera quality"
-- "Close-up of hands holding phone showing app screen, coffee shop table with crumbs, natural window light, shallow depth of field"
-- "POV looking down at laptop on unmade bed, warm afternoon light through blinds, casual and unpolished"
-
-Prompt construction rules:
-- Name a specific camera ("iPhone 15 front camera", "Pixel 8 selfie cam")
-- Describe imperfect lighting ("slightly overexposed", "warm lamp casting harsh shadow")
-- Add texture ("light film grain", "soft lens blur in corners")
-- Include environmental mess ("coffee rings", "crumbs", "tangled earbuds") — real life isn't clean
-- Never use words like "professional", "stunning", "beautiful", "high-quality" — those produce the generic AI look
-
-If the user has reference images, always prefer `background_image_url` over AI generation. Real photos outperform generated ones every time.
-
-### 2. Copy must sound human — not like a marketer
-
-AI writes like a copywriter by default: "Discover the power of...", "Game-changing solution...", "Revolutionary approach..." Nobody on TikTok talks like that. The disconnect is instant and people scroll.
-
-Rules for slide text:
-- Write like someone who just discovered something and is genuinely surprised
-- Casual language, contractions, lowercase when it fits the tone
-- Short punchy fragments, not complete sentences
-- **Never use**: "game-changer", "revolutionary", "must-have", "unlock", "supercharge", "elevate", "leverage", "discover the power of"
-
-**Hooks that work:**
-- "3 things I wish I knew before starting [X]"
-- "Nobody talks about this but..."
-- "I tested [X] for 30 days. here's what happened"
-- "Stop doing [X]. do this instead"
-- "The [thing] that changed everything for me"
-- "Why [controversial opinion]"
-
-**Hooks that don't:**
-- "Discover the Ultimate Guide to [X]"
-- "5 Game-Changing Strategies for Success"
-- "Unlock Your Full Potential with [X]"
-
-If you have access to real comments from the user's niche (TikTok, Reddit, Twitter), study them for tone. Write the slide text in that voice.
-
-### 3. Product integration must feel invisible
-
-If the user is promoting an app or product, the product needs to live INSIDE the content — not next to it, not on top of it. The content should be entertaining enough to get pushed by the algorithm on its own merit. The product is the punchline: the thing the viewer didn't know they needed until they were three slides deep.
-
-**Bad integration** (feels like an ad):
-- Slide 1: Product logo
-- Slide 2: Feature list
-- Slide 3: "Download now"
-
-**Good integration** (feels like content):
-- Slide 1: Relatable problem everyone has
-- Slide 2: The struggle / failed attempts
-- Slide 3: "then I found this..." (product shown in natural use)
-
-A format that gets millions of views but zero conversions means the product is sitting on top of the content instead of inside it. A format that converts but can't get views means the integration is too heavy — it feels like an ad and people scroll past.
-
-## Slide formulas
-
-### 3-Slide (TikTok)
-1. **Hook**: Bold statement or question that stops the scroll
-2. **Value**: Core insight, numbered list, or reveal
-3. **CTA**: "Save this" / "Follow for more" / engagement prompt ("Comment 1, 2, or 3")
-
-### 5-Slide (Instagram)
-1. **Hook**: Compelling title or question
-2–4. **Key Points**: One actionable insight per slide
-5. **CTA + Recap**: Summary + save/follow prompt
-
-### Storytelling (either platform)
-1. Problem → 2. Struggle → 3. Discovery → 4. Result → 5. CTA
-
-## API workflow
-
-### Option A: One-call generation (preferred)
-
-`POST /projects/{id}/carousels/generate` builds the full carousel in one call — backgrounds, text overlays, timeline placement.
+Use when any slide needs an AI-generated background, or when you want solid/gradient fills, or when you want a single call to handle uploads + timeline + overlays.
 
 ```bash
-# 1. Create carousel project
+# 1. Create the carousel project
 PROJECT=$(bash scripts/blitzreels.sh POST /projects '{
   "name": "My Carousel",
   "project_type": "carousel",
   "aspect_ratio": "9:16",
-  "carousel_settings": {
-    "platform": "tiktok",
-    "safe_area_preset": "tiktok_9_16",
-    "slide_count": 3,
-    "background_strategy": "ai_image",
-    "export_formats": ["png"],
-    "jpeg_quality": 90
-  }
+  "carousel_settings": { "platform": "tiktok", "safe_area_preset": "tiktok_9_16", "slide_count": 3, "background_strategy": "mixed" }
 }')
 PROJECT_ID=$(echo "$PROJECT" | jq -r '.id')
 
-# 2. Generate slides
-bash scripts/generate.sh --project-id "$PROJECT_ID" \
-  --slides-json /tmp/slides.json
-
-# 3. Check timeline
-bash scripts/blitzreels.sh GET "/projects/${PROJECT_ID}/context?mode=timeline"
-
-# 4. Export as ZIP of individual slide images
-export BLITZREELS_ALLOW_EXPENSIVE=1
-bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/export" \
-  '{"format":"zip","image_formats":["png"],"jpeg_quality":90}'
-```
-
-Slides JSON example (`/tmp/slides.json`):
-```json
+# 2. Write the slides payload and generate
+cat > /tmp/slides.json <<'JSON'
 {
   "clear_existing": true,
   "slide_duration_seconds": 3,
-  "background_strategy": "ai_image",
+  "background_strategy": "mixed",
   "slides": [
-    {
-      "title": "3 things nobody\ntells you about [X]",
-      "background_prompt": "Candid selfie angle, person looking at phone surprised, warm indoor lighting, iPhone quality, light grain"
-    },
-    {
-      "title": "1. first thing\n2. second thing\n3. third thing",
-      "background_prompt": "Clean white wall with soft window shadow, minimal, natural daylight"
-    },
-    {
-      "title": "save this before\nyou forget",
-      "background_prompt": "Dark moody background, subtle gradient, slight film grain"
-    }
+    { "title": "Hook line", "body": "one-liner",  "background_prompt": "candid iPhone selfie, messy bedroom, warm lamp, light film grain" },
+    { "title": "Point",     "background_image_url": "https://cdn.example.com/slide2.jpg" },
+    { "title": "CTA",       "body": "save this",  "background_color": "#0b0b0f" }
   ]
 }
+JSON
+bash scripts/generate.sh --project-id "$PROJECT_ID" --slides-json /tmp/slides.json
 ```
 
-If `background_strategy` is `ai_image` or `mixed`, the endpoint kicks off a batch AI-image generation run and returns `ai_image_run_id`. Poll `/jobs/{job_id}` until images are ready.
+### `carousel.sh` — synchronous-only (all backgrounds are URLs you already have)
 
-### Option B: Manual assembly (full control)
-
-Use `scripts/carousel.sh` when you have your own images:
+Simpler, no job polling. Use when every slide background is a URL and you just want "stitch these with titles, export."
 
 ```bash
 bash scripts/carousel.sh \
@@ -171,17 +55,27 @@ bash scripts/carousel.sh \
   --yes
 ```
 
-Step-by-step if doing it manually without the script:
-1. `POST /projects` — create carousel project
-2. `POST /projects/{id}/media` — upload each slide background image
-3. `POST /projects/{id}/timeline/media` — place each image on the timeline
-4. `POST /projects/{id}/overlays` — add text overlays (use `"type": "text"`)
-5. `GET /projects/{id}/context?mode=timeline` — verify layout
-6. `POST /projects/{id}/export` — export as ZIP
+Omit `--titles` for Path A (see "TikTok native text" below).
 
-## Export: ZIP of images, not MP4
+### Drafting slide content
 
-Always export carousels as a ZIP of individual PNG/JPG slide images:
+Before writing slide titles/bodies or `background_prompt` values, read `references/playbook.md`. API-level correctness is what earns *any* distribution; content quality is what separates 10k views from 1M. The playbook covers native-looking images, human-sounding copy, and product integration that doesn't feel like an ad.
+
+## Polling (only when AI images are involved)
+
+`generate.sh` returns `job_id: null` if every slide used a URL or fill color — the carousel is ready to export immediately.
+
+If the response includes a non-null `job_id`, AI images are still rendering via trigger.dev. Poll:
+
+```bash
+bash scripts/blitzreels.sh GET "/jobs/${JOB_ID}"
+```
+
+Terminal states: `complete` (ready to export) or a failure state. Recommended cadence: every 3–5s, give up after ~120s. Do not start an export before the job reports `complete` — missing assets render as blank backgrounds.
+
+## Export
+
+Export is expensive, so `blitzreels.sh` gates it behind `BLITZREELS_ALLOW_EXPENSIVE=1`:
 
 ```bash
 export BLITZREELS_ALLOW_EXPENSIVE=1
@@ -189,91 +83,111 @@ bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/export" \
   '{"format":"zip","image_formats":["png","jpg"],"jpeg_quality":90}'
 ```
 
-Poll for completion, then download:
-```bash
-bash scripts/blitzreels.sh GET "/jobs/${JOB_ID}"
-bash scripts/blitzreels.sh GET "/exports/${EXPORT_ID}"
-```
+Poll `/jobs/{job_id}` until done, then read `/exports/{export_id}` for the download URL.
 
-Do NOT export carousels as MP4. The entire point is individual slide images uploaded as native photo posts on TikTok/Instagram. An MP4 "slideshow video" defeats the purpose — it won't get the algorithm treatment that native photo carousels get.
+Export as ZIP of images, not MP4. TikTok and Instagram route native photo carousels through a different (and currently favored) distribution bucket than videos; a "slideshow video" lands in the video bucket and loses that edge. MP4 is fine only if the user explicitly asks for a reel-style video.
 
 ## TikTok native text: the distribution edge
 
-TikTok pushes native text overlays (added inside the TikTok app) harder than pre-rendered text baked into images. TikTok also tracks typing patterns — copy-pasting text gets flagged as automated behavior.
+TikTok boosts native text (typed inside the app) over pre-rendered text baked into images. TikTok also flags copy-paste typing patterns as automation, so the user should type — not paste — the text in-app.
 
-This creates two paths:
+Two paths:
 
-**Path A — Maximum distribution (recommended for TikTok):**
-1. Build slides with background images only — skip text overlays in the API
-2. Export ZIP of clean background images
-3. Upload to TikTok as photo slideshow
-4. Type text manually using TikTok's native text tool (don't paste)
-5. This single detail can be the difference between getting pushed and getting shadowbanned
+- **Path A (default for TikTok)** — generate slides with backgrounds only (skip `title`/`body` in the slides payload, or pass `carousel.sh` without `--titles`). Export clean background-only images. User types text inside TikTok. Lift from native text usually outweighs the extra step. Still draft the text for each slide so the user can reference it while typing.
+- **Path B (default for Instagram, acceptable for TikTok)** — include `title`/`body` per slide. Text is baked into the export. Instagram's algorithm doesn't track text-layer source, so baked-in text is pure time savings. On TikTok it trades some distribution for speed at scale.
 
-**Path B — Convenience (fine for Instagram, acceptable for TikTok):**
-1. Build slides with text overlays baked in via the API
-2. Export ZIP with text already rendered on images
-3. Upload directly
-4. Trade-off: slightly less algorithm favor on TikTok, but much faster at scale
+## API reference (manual path)
 
-Default to Path A for TikTok. For Instagram, Path B is fine — Instagram doesn't penalize pre-rendered text.
+Use this when the two helpers don't cover a variation. Field names are spelled out here because the OpenAPI spec is currently broken (see Resources).
 
-When doing Path A, still generate the text content so the user knows exactly what to type on each slide. Output it as a clear list they can reference while adding text in the app.
+**0. Generate in one call** — `POST /projects/{id}/carousels/generate`
+```json
+{
+  "clear_existing": false,
+  "slide_duration_seconds": 3,
+  "background_strategy": "mixed",
+  "image_model_id": "fal-ai/nano-banana",
+  "slides": [
+    { "title": "Hook", "body": "sub", "background_prompt": "candid iPhone selfie, warm lamp, light grain" },
+    { "title": "Point", "background_image_url": "https://cdn.example.com/p.jpg" },
+    { "title": "CTA", "body": "save this", "background_color": "#0b0b0f" }
+  ]
+}
+```
+Strategy → required per-slide field:
+- `image` — every slide needs `background_image_url` (400 otherwise)
+- `mixed` — each slide needs `background_image_url` **or** `background_prompt` (400 if neither)
+- `solid` — uses `background_color` (default `#000000`); image fields ignored
+- `gradient` — same as `solid` but renders a gradient fill
 
-## Platform reference
+Platform caps (from `carousel_settings.platform`): TikTok 35, Instagram 10, default 35. Slide count over the cap returns 400.
 
-### TikTok (Photo Mode)
-- Aspect ratio: `9:16`
-- Safe area preset: `tiktok_9_16`
-- Danger zones: top 80px (status bar), right 120px (like/share buttons), bottom 450px (captions/username)
-- Safe text zone: `position_x: 0.35–0.55`, `position_y: 0.15–0.65`
-- Optimal slide count: 3–5
+Default image model: `fal-ai/nano-banana` (~5¢/image). Cheapest: `fal-ai/bytedance/seedream/v5/lite/text-to-image` (~4¢).
 
-### Instagram Feed
-- Aspect ratio: `4:5` (portrait) or `1:1` (square)
-- Safe area preset: `instagram_4_5` or `instagram_1_1`
-- Danger zones: bottom 420px on 4:5, bottom 380px on 1:1 (captions/buttons)
-- Safe text zone: `position_x: 0.5` (always centered), `position_y: 0.15–0.60`
-- Optimal slide count: 3–5 (max 10, engagement drops after 5)
+Response: `{ project_id, slide_count, job_id, ai_image_run_id, timeline_item_ids, text_overlay_ids, fill_layer_ids, ai_asset_ids, message }`. `job_id` is null unless AI images were requested.
 
-For detailed safe area diagrams, pixel specs, and copy-paste position configs, read `references/safe-areas.md`.
+Requires `project_type: "carousel"`; returns 400 otherwise.
 
-## Readability rules
+**1. Create project** — `POST /projects`
+```json
+{
+  "name": "My Carousel",
+  "project_type": "carousel",
+  "aspect_ratio": "9:16",
+  "carousel_settings": {
+    "platform": "tiktok",
+    "safe_area_preset": "tiktok_9_16",
+    "slide_count": 3,
+    "background_strategy": "mixed",
+    "export_formats": ["png"],
+    "jpeg_quality": 90
+  }
+}
+```
+`background_strategy` ∈ `solid | gradient | image | mixed`. Response: `{ "id": "..." }`.
 
-- **Max 40 chars/line** — mobile readable at thumb-scroll speed
-- **Max 4 lines/slide** — if you need more text, add more slides
-- **Min font size: 48px** — anything smaller is illegible on mobile
-- Titles: 64–80px, Body: 48–64px
-- **Always enable text stroke**: 6px black on white (or vice versa)
-- **Bold sans-serif fonts**: Inter, Montserrat, Poppins — not serif
-- **WCAG AA contrast**: 4.5:1 minimum (text vs background)
+**2. Upload each slide background** (when not using `carousels/generate`) — `POST /projects/{id}/media` with `{ "url": "https://...jpg", "name": "Slide 1" }`. The field is `url`, not `source_url`. Response: `{ "media": { "id": "..." } }`. Grab `.media.id`.
 
-## Post-production details
+**3. Place images on timeline** — `POST /projects/{id}/timeline/media` with items array:
+```json
+{ "items": [{ "asset_id": "<media.id>", "start_seconds": 0, "duration_seconds": 3, "position_preset": "fullscreen" }], "allow_duplicate": false }
+```
+Response: `{ "inserted": [{ "success": true, ... }] }`.
 
-These take 2 extra minutes per carousel but consistently move the needle on distribution:
+**4. Add text overlays** — `POST /projects/{id}/text-overlays`, one per overlay. Body: `text`, `start_seconds`, `duration_seconds`, `position_x`, `position_y`, `style` (see `carousel.sh` for a safe default). Response: `{ "success": true, ... }`.
 
-1. **Film grain** — Removes the clean digital look. Use the backgrounds API:
-   ```bash
-   bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/backgrounds" \
-     '{"style_keyword":"film","span_full_video":true,"film_grain_style":"subtle"}'
-   ```
-   Apply this BEFORE export so the grain renders into the slide images.
+**5. Verify** — `GET /projects/{id}/context?mode=timeline` returns the assembled slide stack. Check order and timing before spending credits on export.
 
-2. **Export at 1080p** — Lower resolution blends with organic content. 4K screams "produced."
+## Post-production: film grain
 
-3. **Compression round** — After exporting the ZIP, upload each image to Telegram, download it, then upload to TikTok/Instagram. This strips EXIF metadata and adds compression artifacts that real user content has. The algorithm treats compressed images as more authentic.
+Subtle film grain removes the clean digital look and reliably improves distribution. Apply via the API before export — grain is rendered server-side during export, so anything added afterward would require re-exporting and re-spending credits.
+
+```bash
+bash scripts/blitzreels.sh POST "/projects/${PROJECT_ID}/backgrounds" \
+  '{"style_keyword":"film","span_full_video":true,"film_grain_style":"subtle"}'
+```
+
+Other post-production moves (1080p over 4K, Telegram compression round) are content-craft rather than API calls — see `references/playbook.md`.
+
+## Platform specifics
+
+For aspect ratios, safe zones, and readability rules per platform, read `references/platforms.md`. For pixel-perfect safe-area diagrams and copy-paste position configs, read `references/safe-areas.md`.
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/carousel.sh` | Manual carousel assembly (own images + optional titles) |
-| `scripts/generate.sh` | One-call generation via `/carousels/generate` |
-| `scripts/blitzreels.sh` | Base API helper (any endpoint) |
-| `scripts/validate-api.sh` | Check required endpoints exist in OpenAPI spec |
+| `scripts/generate.sh` | One-call carousel build via `/carousels/generate` (handles AI image gen, fills, overlays) |
+| `scripts/carousel.sh` | Synchronous assembly when every background is a URL you already have |
+| `scripts/blitzreels.sh` | Base API helper for any endpoint; fails loudly on non-2xx |
+| `scripts/validate-api.sh` | Smoke-check that carousel endpoints exist on the API |
 
 ## Resources
 
 - API docs: `https://www.blitzreels.com/docs/carousels`
-- OpenAPI spec: `https://www.blitzreels.com/api/openapi.json`
+- OpenAPI spec: `https://www.blitzreels.com/api/openapi.json` — **currently broken** (returns `"paths": {}` due to a Zod schema error). Use this skill as the source of truth until it's fixed.
 - Full LLM docs: `https://www.blitzreels.com/llms-full.txt`
+- Content playbook: `references/playbook.md`
+- Platform settings + readability: `references/platforms.md`
+- Pixel-level safe areas: `references/safe-areas.md`
+- Worked example (fitness app, Path A): `examples/fitness-app-tiktok.md`
