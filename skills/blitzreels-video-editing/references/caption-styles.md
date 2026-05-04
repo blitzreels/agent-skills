@@ -155,9 +155,15 @@
 | GET | `/projects/{id}/captions/style` | Get current caption style |
 | PATCH | `/projects/{id}/captions/style` | Update caption style settings |
 | POST | `/projects/{id}/captions` | Apply preset by `style_id` |
-| GET | `/projects/{id}/captions/words` | List caption words, optionally filtered by `timeline_item_id` |
+| GET | `/projects/{id}/captions` | List caption blocks |
+| GET | `/projects/{id}/captions/{captionId}` | Get one caption block with words |
+| PATCH | `/projects/{id}/captions/{captionId}` | Replace caption block text |
+| GET | `/projects/{id}/captions/words` | List caption words, optionally filtered by `timeline_item_id` or `match_text` |
 | POST | `/projects/{id}/captions/words/text` | Update one caption word by `word_id` |
+| POST | `/projects/{id}/captions/words/delete` | Delete caption words |
+| POST | `/projects/{id}/captions/words/merge` | Merge contiguous caption words |
+| POST | `/projects/{id}/captions/words/split` | Split a caption word |
 | POST | `/projects/{id}/captions/words/emphasis` | Set emphasis on specific words |
 | POST | `/projects/{id}/captions/words/style` | Set per-word style overrides |
 
-The public API does not expose caption-block CRUD today. Do not call guessed routes such as `/captions/{captionId}`, `/projects/{id}/captions/{captionId}`, or `/projects/{id}/captions/presets`. Use project context to find the caption timeline item, then list/update words by `timeline_item_id` and `word_id`.
+Caption-block CRUD is project-scoped. Do not call guessed global routes such as `/captions/{captionId}` or guessed preset routes such as `/projects/{id}/captions/presets`. Use project context to find the caption timeline item and its `captionId`, then patch `/projects/{id}/captions/{captionId}` or list/update words by `timeline_item_id` and `word_id`.

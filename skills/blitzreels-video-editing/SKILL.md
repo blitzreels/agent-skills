@@ -124,7 +124,7 @@ Use `/workspace/media/assets/{assetId}` for asset lookup. Do not try `/assets/{i
 | POST | `/projects/{id}/transcript/corrections` | Bulk transcript corrections |
 | POST | `/projects/{id}/transcribe` | Re-transcribe media by media asset |
 
-Transcript corrections accept single-token `replacements` and same-token-count `phrase_replacements`. For `"Cloud Code" -> "Claude Code"`, use `phrase_replacements` with `from_words: ["Cloud", "Code"]` and `to_words: ["Claude", "Code"]`. Token-count-changing edits such as `"de Expo" -> "d'Expo"` are not supported by transcript corrections; use precise caption word edits or the UI.
+Transcript corrections accept single-token `replacements` and same-token-count `phrase_replacements`. For `"Cloud Code" -> "Claude Code"`, use `phrase_replacements` with `from_words: ["Cloud", "Code"]` and `to_words: ["Claude", "Code"]`. Token-count-changing edits such as `"de Expo" -> "d'Expo"` are not supported by transcript corrections; use caption block patching or caption word merge/split/delete endpoints.
 
 ### Captions
 
@@ -133,12 +133,18 @@ Transcript corrections accept single-token `replacements` and same-token-count `
 | POST | `/projects/{id}/captions` | Apply caption preset |
 | GET | `/projects/{id}/captions/style` | Get current style |
 | PATCH | `/projects/{id}/captions/style` | Update style settings |
-| GET | `/projects/{id}/captions/words` | List caption words for precise edits |
+| GET | `/projects/{id}/captions` | List caption blocks |
+| GET | `/projects/{id}/captions/{captionId}` | Get a caption block with words |
+| PATCH | `/projects/{id}/captions/{captionId}` | Replace caption block text |
+| GET | `/projects/{id}/captions/words` | List caption words for precise edits, optionally filtered by `timeline_item_id` or `match_text` |
 | POST | `/projects/{id}/captions/words/emphasis` | Emphasize specific words |
 | POST | `/projects/{id}/captions/words/text` | Update one caption word by ID |
+| POST | `/projects/{id}/captions/words/delete` | Delete caption words |
+| POST | `/projects/{id}/captions/words/merge` | Merge contiguous caption words |
+| POST | `/projects/{id}/captions/words/split` | Split one caption word into multiple words |
 | POST | `/projects/{id}/captions/words/style` | Update per-word styling |
 
-There is no public caption-block CRUD today: no `GET /projects/{id}/captions`, no `PATCH /projects/{id}/captions/{captionId}`, no `DELETE /projects/{id}/captions/{captionId}`, and no global `GET/PATCH /captions/{captionId}`. To target a rendered caption block, read `GET /projects/{id}/context?mode=full`, find the caption timeline item by timestamp/label, then call `GET /projects/{id}/captions/words?timeline_item_id=...` and update exact `word_id`s with `/captions/words/text`.
+Caption IDs are exposed on caption timeline items in `GET /projects/{id}/context?mode=full` as `captionId`. Caption routes are project-scoped; do not call guessed global routes such as `/captions/{captionId}`. To target a rendered caption block, read context, find the caption timeline item by timestamp/label, then use `captionId` with `/projects/{id}/captions/{captionId}` or list words with `GET /projects/{id}/captions/words?timeline_item_id=...`.
 
 ### Timeline Editing
 

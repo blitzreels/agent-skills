@@ -119,7 +119,8 @@ These are dogfood findings checked against the live OpenAPI. Re-check OpenAPI be
 - Workspace media listing caps `limit` at `100`.
 - Workspace settings `GET` returns both `safeWords` and `protected_words`, but `PATCH /workspace/settings` accepts only one of `safe_words` or `protected_words`.
 - Transcript bulk corrections support single-token `replacements` and same-token-count `phrase_replacements`. They do not support token-count-changing edits such as deleting/fusing words.
-- Caption-block CRUD is not public. There is no `GET /projects/{projectId}/captions` list route, `GET/PATCH /captions/{captionId}`, or `PATCH /projects/{projectId}/captions/{captionId}`. Use `/captions/words`, `/captions/words/text`, `/captions/words/style`, `/captions/words/emphasis`, or transcript corrections.
+- Caption blocks are project-scoped. Use `GET /projects/{projectId}/captions`, `GET /projects/{projectId}/captions/{captionId}`, and `PATCH /projects/{projectId}/captions/{captionId}` for whole-caption reads or token-count-changing edits. There is no global `GET/PATCH /captions/{captionId}` route.
+- For precise word edits, use `GET /projects/{projectId}/captions/words`, optionally with `timeline_item_id` and `match_text`, then call `/captions/words/text`, `/captions/words/delete`, `/captions/words/merge`, `/captions/words/split`, `/captions/words/style`, or `/captions/words/emphasis`.
 - Public timeline media insertion uses an `items` array with `asset_id` and supports media-library image/video insertions. Audio insertion is public at `POST /projects/{projectId}/timeline/audio`, but it expects an existing workspace audio asset; do not guess `/audio` or `/music`.
 
 ## Commands
