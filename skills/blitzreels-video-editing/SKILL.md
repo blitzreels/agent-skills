@@ -1,6 +1,6 @@
 ---
 name: blitzreels-video-editing
-description: Video editing workflows with BlitzReels API: upload, transcribe, timeline editing, captions, transcript corrections, media-library asset lookup, overlays, backgrounds, export, workspace settings, and source-view ROI-aware reframing. Use this whenever a user asks an agent to edit an existing BlitzReels project, copy fixes from a previous video, manipulate timeline items, inspect media assets, repair captions, change workspace protected words/defaults, or diagnose API editing failures.
+description: "Video editing workflows with BlitzReels API: upload, transcribe, timeline editing, captions, transcript corrections, media-library asset lookup, overlays, backgrounds, export, workspace settings, and source-view ROI-aware reframing. Use this whenever a user asks an agent to edit an existing BlitzReels project, copy fixes from a previous video, manipulate timeline items, inspect media assets, repair captions, change workspace protected words/defaults, or diagnose API editing failures."
 ---
 
 # BlitzReels Video Editing

@@ -1,6 +1,6 @@
 ---
 name: blitzreels
-description: BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, carousels, or motion graphics.
+description: "BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, carousels, or motion graphics."
 ---
 
 # BlitzReels Skill
