@@ -9,7 +9,7 @@ Edit videos via the BlitzReels API: upload media, transcribe, edit timeline, app
 
 If the task is specifically long-form to shorts, podcast-to-shorts, suggestion-backed clipping, or public automatic-layout reframe planning, prefer the `blitzreels-clipping` skill first and come back here for lower-level timeline work.
 
-Important: project preview and visual QA endpoints now exist. Use them when an agent needs to verify framing, caption placement, or layout visually before export.
+Important: project preview and visual QA endpoints now exist. Use them when an agent needs to verify framing, caption placement, or layout visually before export. Preview and render calls can be slow; request only the timestamps you need.
 
 Important: do not infer endpoint names from dashboard URLs or likely nouns. Public API coverage is narrower than the product UI. Search this skill, `llms-full.txt`, and `references/api-dogfood-caveats.md` before trying a new path.
 
@@ -106,8 +106,8 @@ bash scripts/blitzreels.sh METHOD /path [JSON_BODY]
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/projects/{id}/media` | Import media from URL |
-| POST | `/projects/{id}/upload/presigned` | Get presigned upload URL |
-| POST | `/projects/{id}/upload/finalize` | Finalize presigned upload |
+| POST | `/workspace/media/upload/init` | Create direct upload URL |
+| POST | `/workspace/media/upload/finalize` | Finalize direct upload |
 | GET | `/workspace/media/assets` | List workspace media assets (`limit` max 100) |
 | GET | `/workspace/media/assets/{assetId}` | Get media asset details and signed file URL |
 
@@ -139,12 +139,16 @@ Transcript corrections accept single-token `replacements` and same-token-count `
 | GET | `/projects/{id}/captions/words` | List caption words for precise edits, optionally filtered by `timeline_item_id` or `match_text` |
 | POST | `/projects/{id}/captions/words/emphasis` | Emphasize specific words |
 | POST | `/projects/{id}/captions/words/text` | Update one caption word by ID |
-| POST | `/projects/{id}/captions/words/delete` | Delete caption words |
+| POST | `/projects/{id}/captions/words/batch-text` | Update many caption words by ID |
+| POST | `/projects/{id}/captions/words/delete` | Delete caption words, including words from multiple caption blocks |
 | POST | `/projects/{id}/captions/words/merge` | Merge contiguous caption words |
 | POST | `/projects/{id}/captions/words/split` | Split one caption word into multiple words |
 | POST | `/projects/{id}/captions/words/style` | Update per-word styling |
+| GET | `/fonts?surface=captions` | List caption-renderable fonts before setting `fontFamily` |
 
 Caption IDs are exposed on caption timeline items in `GET /projects/{id}/context?mode=full` as `captionId`. Caption routes are project-scoped; do not call guessed global routes such as `/captions/{captionId}`. To target a rendered caption block, read context, find the caption timeline item by timestamp/label, then use `captionId` with `/projects/{id}/captions/{captionId}` or list words with `GET /projects/{id}/captions/words?timeline_item_id=...`.
+
+Typo-fix workflow: list words with `GET /projects/{id}/captions/words?limit=500`; use `sequenceIndex`, `captionId`, `timelineItemId`, `startSeconds`, and `endSeconds` to target edits. Use `/captions/words/text` for a few isolated words, `/captions/words/batch-text` for many isolated words, `/transcript/corrections` for same-token-count phrases, and merge/delete/split for token-count-changing edits. Phrase replacements can cross caption block boundaries and return `unmatched_phrase_replacements` explicitly.
 
 ### Timeline Editing
 
@@ -210,6 +214,18 @@ It currently supports visual media library assets. For audio, use `POST /project
 | POST | `/projects/{id}/preview-frames` | Render multiple still previews |
 | POST | `/projects/{id}/visual-analysis` | Run structured frame QA |
 | GET | `/projects/{id}/visual-debug` | Get machine-readable layout geometry |
+
+Preview body examples:
+
+```json
+{ "time_seconds": 12.5 }
+```
+
+```json
+{ "times_seconds": [3, 12.5, 28], "target_width": 720, "image_format": "jpeg" }
+```
+
+`target_width` is optional and defaults to native render width. `image_format` defaults to `jpeg`. `preview-frames` also accepts the older alias `time_seconds_list`.
 
 ### Media View Repair
 
@@ -289,21 +305,25 @@ bash scripts/editor.sh context PROJECT_ID full
 bash scripts/editor.sh upload-url PROJECT_ID "https://example.com/video.mp4"
 ```
 
-### Presigned 2-Step (For Local Files)
+### Direct Upload 2-Step (For Local Files)
 ```bash
-# Step 1: Get presigned URL
-PRESIGNED=$(bash scripts/blitzreels.sh POST /projects/PROJECT_ID/upload/presigned \
+# Step 1: Get upload URL
+INIT=$(bash scripts/blitzreels.sh POST /workspace/media/upload/init \
   '{"fileName":"video.mp4","contentType":"video/mp4"}')
 
-# Step 2: Upload to presigned URL
-curl -X PUT "$(echo $PRESIGNED | jq -r '.url')" \
+# Step 2: Upload to returned URL
+curl -X PUT "$(echo $INIT | jq -r '.url')" \
   -H "Content-Type: video/mp4" \
   --data-binary @video.mp4
 
 # Step 3: Finalize
-bash scripts/blitzreels.sh POST /projects/PROJECT_ID/upload/finalize \
-  "{\"storageKey\":\"$(echo $PRESIGNED | jq -r '.key')\"}"
+bash scripts/blitzreels.sh POST /workspace/media/upload/finalize \
+  "{\"storageKey\":\"$(echo $INIT | jq -r '.key')\"}"
 ```
+
+## API Dogfood Tests
+
+Runnable agent-facing scenarios live in `docs/api-dogfood-tests.md` in the BlitzReels app repo. Use that file as the canonical checklist when verifying caption edits, preview defaults, B-roll transforms, motion graphic delete, content items, font validation, upload init/finalize, and public error shapes.
 
 ## Quick Reference
 
