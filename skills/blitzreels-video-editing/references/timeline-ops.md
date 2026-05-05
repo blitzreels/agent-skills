@@ -150,7 +150,7 @@ Watermark CRUD routes are not public in the live OpenAPI. Use the dashboard or p
 
 | Layer | Index | Content |
 |-------|-------|---------|
-| Caption | 0 | Caption text overlays |
+| Caption | 0 | Caption subtitles |
 | Effect | 1 | Zoom, mask, color grade |
 | Image | 2 | Image overlays |
 | Video | 3 | Video clips |

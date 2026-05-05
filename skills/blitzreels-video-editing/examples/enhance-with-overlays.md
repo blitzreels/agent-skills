@@ -9,20 +9,15 @@ bash scripts/editor.sh context proj_abc123 timeline
 # → See existing clips, timing, and layers
 ```
 
-## 2. Add Title Card (Text Overlay)
+## 2. Add Opening Text Overlay
 
 ```bash
-bash scripts/blitzreels.sh POST /projects/proj_abc123/text-overlays '{
+bash scripts/blitzreels.sh POST /projects/proj_abc123/content-items '{
+  "kind": "overlay",
   "text": "5 Tips for Better Code",
-  "styleSettings": {
-    "fontSize": 64,
-    "fontFamily": "Inter",
-    "fontWeight": "800",
-    "color": "#FFFFFF"
-  },
-  "position": {"x": 50, "y": 40},
-  "startSeconds": 0,
-  "durationSeconds": 3
+  "start_seconds": 0,
+  "duration_seconds": 3,
+  "layer_index": 1
 }'
 ```
 
@@ -44,19 +39,15 @@ bash scripts/blitzreels.sh POST /projects/proj_abc123/motion-code '{
 }'
 ```
 
-## 4. Add Lower-Third Name Card (Motion Graphic)
+## 4. Add Lower-Third Label
 
 ```bash
-bash scripts/blitzreels.sh POST /projects/proj_abc123/motion-graphics '{
-  "template": "lower-third",
-  "primaryText": "Jane Smith",
-  "secondaryText": "Senior Developer",
-  "accentColor": "#6366F1",
-  "position": "bottom-left",
-  "animation": "slide-left",
-  "exitAnimation": "fade",
-  "startSeconds": 2,
-  "durationSeconds": 5
+bash scripts/blitzreels.sh POST /projects/proj_abc123/content-items '{
+  "kind": "overlay",
+  "text": "Jane Smith — Senior Developer",
+  "start_seconds": 2,
+  "duration_seconds": 5,
+  "layer_index": 1
 }'
 ```
 

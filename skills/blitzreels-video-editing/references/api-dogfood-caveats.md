@@ -36,7 +36,7 @@ Preferred sequence:
 2. Read target project context: `GET /projects/{targetProjectId}/context?mode=full`.
 3. Copy caption style: `GET /projects/{previousProjectId}/captions/style`, then `PATCH /projects/{targetProjectId}/captions/style`.
 4. Apply transcript corrections with single-token `replacements` or same-token-count `phrase_replacements`. For token-count-changing caption edits, patch caption blocks or use word delete/merge/split endpoints.
-5. Copy overlay/timeline placement using registered timeline item update routes.
+5. Copy editable overlays through `/projects/{id}/content-items`, then copy placement using registered timeline item update routes.
 6. Verify with `preview-frames`, `visual-debug`, or `context?mode=full`.
 
-Do not try guessed global caption-block, timeline pack, timeline silence-detection, or background music paths unless OpenAPI lists them.
+Do not try guessed global caption-block, timeline pack, timeline silence-detection, alternate overlay, generated graphics, or background music paths unless OpenAPI lists them.

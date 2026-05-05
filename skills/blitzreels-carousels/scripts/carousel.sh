@@ -192,34 +192,24 @@ for i in "${!IMAGE_URLS[@]}"; do
     done
 
     # Conservative placement: slightly above center and slightly left of center (TikTok right UI).
-    textOverlayBody=$(
+    overlayBody=$(
       jq -n \
         --arg text "$title" \
         --argjson start "$start" \
         --argjson dur "$SLIDE_DURATION" \
         '{
+          kind:"overlay",
           text:$text,
           start_seconds:$start,
           duration_seconds:$dur,
-          position:"top",
-          position_x:0.45,
-          position_y:0.18,
-          style:{
-            font_size:64,
-            font_weight:"700",
-            text_align:"center",
-            color:"#ffffff",
-            text_stroke_enabled:true,
-            text_stroke_color:"#000000",
-            text_stroke_width_px:6
-          }
+          layer_index:1
         }'
     )
-    textOverlayRes=$(bash "$BLITZREELS_SH" POST "/projects/${PROJECT_ID}/text-overlays" "$textOverlayBody")
-    textOverlayOk=$(echo "$textOverlayRes" | jq -r '.success // false')
-    if [[ "$textOverlayOk" != "true" ]]; then
+    overlayRes=$(bash "$BLITZREELS_SH" POST "/projects/${PROJECT_ID}/content-items" "$overlayBody")
+    overlayOk=$(echo "$overlayRes" | jq -r '.success // false')
+    if [[ "$overlayOk" != "true" ]]; then
       echo "Warning: failed to add title overlay for slide ${idx}" >&2
-      echo "$textOverlayRes" | jq . >&2
+      echo "$overlayRes" | jq . >&2
     fi
   fi
 

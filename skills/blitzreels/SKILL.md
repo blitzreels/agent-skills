@@ -1,6 +1,6 @@
 ---
 name: blitzreels
-description: "BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, carousels, or motion graphics."
+description: "BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, or carousels."
 ---
 
 # BlitzReels Skill
@@ -10,8 +10,7 @@ Use the BlitzReels API to create and edit video projects programmatically.
 For focused workflows, install the specialized skills:
 
 - **`blitzreels-clipping`** — Long video to short vertical clipping workflows: ingest → transcript → short suggestions → smart crop or ROI reframing → clip-window captions → export. Includes clipping-specific workflow guidance.
-- **`blitzreels-motion-graphics`** — Motion graphics via the Playground API: create compositions with text, shapes, charts, code, animations. Includes `playground.sh` CRUD script, composition spec reference.
-- **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
+- **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → editable overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
 
 ## Setup
 
@@ -82,7 +81,7 @@ Search by keyword:
 ```bash
 curl -sS https://www.blitzreels.com/api/openapi.json \
   | jq -r '.paths | keys[]' \
-  | grep -iE 'caption|export|timeline|overlay|template|webhook|job|playground' || true
+  | grep -iE 'caption|export|timeline|overlay|template|webhook|job|content-items' || true
 ```
 
 If this returns no paths, use the fallback index:

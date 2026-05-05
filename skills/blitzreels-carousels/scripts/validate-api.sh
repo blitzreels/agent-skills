@@ -45,7 +45,7 @@ REQUIRED_ENDPOINTS=(
   "/projects"
   "/projects/{id}/media"
   "/projects/{id}/timeline/media"
-  "/projects/{id}/text-overlays"
+  "/projects/{id}/content-items"
   "/projects/{id}/context"
   "/projects/{id}/export"
 )

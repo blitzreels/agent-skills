@@ -9,7 +9,7 @@ set -euo pipefail
 #   - kick off a batch AI image run for any background_prompts (async, job-based)
 #   - insert all slides on the timeline as fullscreen images
 #   - add solid/gradient fill layers (for those strategies)
-#   - add title + body text overlays per slide (64px white, black stroke)
+#   - add title + body editable overlays per slide
 #
 # If any slide uses AI image generation, the response includes `job_id`.
 # Poll `/jobs/{job_id}` until complete before exporting.

@@ -38,7 +38,7 @@ bash scripts/editor.sh export PROJECT_ID --resolution 1080p
 5. **Get context** — `editor.sh context` to see timeline state
 6. **Edit timeline** — trim, split, delete, reorder, auto-remove silences
 7. **Apply/copy captions** — `editor.sh captions <presetId>` for styled subtitles, or copy settings with `GET/PATCH /projects/{id}/captions/style`
-8. **Add overlays** — text overlays, motion code, motion graphics
+8. **Add overlays** — canonical editable overlays via `/content-items` (`kind: "overlay"`), plus motion code when explicitly needed
 9. **Add background** — fill layers (gradients, cinematic, patterns)
 10. **Export** — `editor.sh export` renders final video with download URL
 
@@ -185,17 +185,18 @@ Typo-fix workflow: list words with `GET /projects/{id}/captions/words?limit=500`
 
 It currently supports visual media library assets. For audio, use `POST /projects/{id}/timeline/audio` with an existing workspace audio asset. Do not guess `/audio` or `/music`.
 
-### Overlays — Text, Motion Code, Motion Graphics
+### Overlays
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/projects/{id}/text-overlays` | List text overlays |
-| POST | `/projects/{id}/text-overlays` | Add text overlay |
-| POST | `/projects/{id}/overlays` | Add generic overlay |
+| GET | `/projects/{id}/content-items` | List editable overlays, title cards, and watermarks |
+| POST | `/projects/{id}/content-items` | Add canonical editable overlay with `kind: "overlay"` |
+| PATCH | `/projects/{id}/content-items/{contentItemId}` | Update editable overlay metadata/spec |
+| DELETE | `/projects/{id}/content-items/{contentItemId}` | Delete editable overlay |
 | GET | `/projects/{id}/motion-code` | List motion code blocks |
 | POST | `/projects/{id}/motion-code` | Add animated code block |
-| GET | `/projects/{id}/motion-graphics` | List motion graphics |
-| POST | `/projects/{id}/motion-graphics` | Add motion graphic |
+
+Do not guess alternate overlay routes. The supported agent-facing text layer is `/content-items` with `kind: "overlay"`. The dashboard calls this editable text layer **Overlays** in Combined Text.
 
 ### Backgrounds
 
@@ -323,7 +324,7 @@ bash scripts/blitzreels.sh POST /workspace/media/upload/finalize \
 
 ## API Dogfood Tests
 
-Runnable agent-facing scenarios live in `docs/api-dogfood-tests.md` in the BlitzReels app repo. Use that file as the canonical checklist when verifying caption edits, preview defaults, B-roll transforms, motion graphic delete, content items, font validation, upload init/finalize, and public error shapes.
+Runnable agent-facing scenarios live in `docs/api-dogfood-tests.md` in the BlitzReels app repo. Use that file as the canonical checklist when verifying caption edits, preview defaults, B-roll transforms, canonical content item overlays, font validation, upload init/finalize, and public error shapes.
 
 ## Quick Reference
 
@@ -338,7 +339,7 @@ Runnable agent-facing scenarios live in `docs/api-dogfood-tests.md` in the Blitz
 - `references/clipping.md` — Long-form to short workflow, podcast QA loop, preview/repair endpoints
 - `references/api-dogfood-caveats.md` — Verified public API gotchas from real agent usage
 - `references/caption-styles.md` — All 30+ presets, CaptionStyleSettings schema, animations
-- `references/overlays.md` — Text overlays, motion code, motion graphics schemas
+- `references/overlays.md` — Canonical editable overlays and motion code schemas
 - `references/fill-layers.md` — 38+ background recipes and FillLayerSettings schema; public API route is `/backgrounds`
 - `references/timeline-ops.md` — Timeline endpoints, AI features, keyframes, effects
 - `references/export-settings.md` — Export params, codecs, polling pattern

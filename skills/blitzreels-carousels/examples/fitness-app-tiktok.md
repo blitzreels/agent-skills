@@ -62,7 +62,7 @@ PROJECT=$(bash scripts/blitzreels.sh POST /projects '{
 }')
 PROJECT_ID=$(echo "$PROJECT" | jq -r '.id')
 
-# 2. One-call generation — uploads + AI images + timeline, no text overlays (Path A)
+# 2. One-call generation — uploads + AI images + timeline, no baked text (Path A)
 cat > /tmp/slides.json <<'JSON'
 {
   "clear_existing": true,
@@ -110,7 +110,7 @@ For Path B (text baked in — fine for Instagram, acceptable for TikTok at scale
 2. Optional compression: upload each to Telegram, re-download (strips metadata)
 3. Open TikTok > Create > Photo mode
 4. Select the 3 images in order
-5. **Type** each text overlay manually (don't copy-paste — TikTok flags it):
+5. **Type** each overlay manually (don't copy-paste — TikTok flags it):
    - Slide 1: "3 things I stopped doing to finally lose weight"
    - Slide 2: "1. counting every calorie by hand" / "2. skipping meals to 'save' calories" / "3. eating the same 4 boring meals"
    - Slide 3: "this app just... does it for you?" / "like I take a photo and it logs everything"

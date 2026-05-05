@@ -5,7 +5,7 @@ description: Build slide-based social content (backgrounds + text, exported as i
 
 # BlitzReels Carousels
 
-Create still-slide carousels for TikTok and Instagram: background images + text overlays, exported as **individual slide images** (ZIP of PNG/JPG).
+Create still-slide carousels for TikTok and Instagram: background images + editable overlays, exported as **individual slide images** (ZIP of PNG/JPG).
 
 ## Happy path
 
@@ -124,7 +124,7 @@ Platform caps (from `carousel_settings.platform`): TikTok 35, Instagram 10, defa
 
 Default image model: `fal-ai/nano-banana` (~5¢/image). Cheapest: `fal-ai/bytedance/seedream/v5/lite/text-to-image` (~4¢).
 
-Response: `{ project_id, slide_count, job_id, ai_image_run_id, timeline_item_ids, text_overlay_ids, fill_layer_ids, ai_asset_ids, message }`. `job_id` is null unless AI images were requested.
+Response: `{ project_id, slide_count, job_id, ai_image_run_id, timeline_item_ids, overlay_ids, fill_layer_ids, ai_asset_ids, message }`. `job_id` is null unless AI images were requested.
 
 Requires `project_type: "carousel"`; returns 400 otherwise.
 
@@ -154,7 +154,7 @@ Requires `project_type: "carousel"`; returns 400 otherwise.
 ```
 Response: `{ "inserted": [{ "success": true, ... }] }`.
 
-**4. Add text overlays** — `POST /projects/{id}/text-overlays`, one per overlay. Body: `text`, `start_seconds`, `duration_seconds`, `position_x`, `position_y`, `style` (see `carousel.sh` for a safe default). Response: `{ "success": true, ... }`.
+**4. Add editable overlays** — `POST /projects/{id}/content-items`, one per overlay. Body: `kind: "overlay"`, `text`, `start_seconds`, `duration_seconds`, `layer_index` (see `carousel.sh` for a safe default). Response: `{ "success": true, ... }`.
 
 **5. Verify** — `GET /projects/{id}/context?mode=timeline` returns the assembled slide stack. Check order and timing before spending credits on export.
 

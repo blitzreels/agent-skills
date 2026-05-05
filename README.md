@@ -22,7 +22,7 @@ If you want AI agents to build real video workflows against BlitzReels, this rep
 BlitzReels combines an end-user video editor and a developer-first API:
 
 - Full video editing app with timeline, media library, captions, effects, and export controls.
-- AI generation workflows for faceless videos, carousels, b-roll, and motion graphics.
+- AI generation workflows for faceless videos, carousels, and B-roll.
 - Public API + OpenAPI contract for building your own video products and automations.
 - Learn more at https://blitzreels.com
 - API docs: https://blitzreels.com/docs
@@ -54,7 +54,6 @@ BlitzReels combines an end-user video editor and a developer-first API:
 - `blitzreels-caption-themes` - Create, edit, preview, and manage custom caption themes via the BlitzReels API (typography, colors, animations, emphasis, layout).
 - `blitzreels-clipping` - Long-form to short-form clipping workflows with transcript-backed suggestions, smart crop, and clip-window captions.
 - `blitzreels-video-editing` - TikTok/Instagram clipping and captioning workflows (timeline, captions, overlays, exports).
-- `blitzreels-motion-graphics` - Timeline editing + motion graphics workflows (overlays, templates, export).
 - `blitzreels-carousels` - Carousel project workflows for short-form platforms (slide + text overlay pipelines).
 
 ## Installation
