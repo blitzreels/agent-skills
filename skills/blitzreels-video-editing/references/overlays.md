@@ -1,6 +1,6 @@
 # Overlays Reference
 
-BlitzReels' supported public text layer is the same editable layer shown in the dashboard under **Combined Text > Overlays**.
+BlitzReels' supported public text layer is the same editable layer shown in the dashboard under **Combined Text > Text**.
 
 Use the content item API. Do not guess alternate overlay or generated graphics routes for video-editing tasks.
 

@@ -196,7 +196,7 @@ It currently supports visual media library assets. For audio, use `POST /project
 | GET | `/projects/{id}/motion-code` | List motion code blocks |
 | POST | `/projects/{id}/motion-code` | Add animated code block |
 
-Do not guess alternate overlay routes. The supported agent-facing text layer is `/content-items` with `kind: "overlay"`. The dashboard calls this editable text layer **Overlays** in Combined Text.
+Do not guess alternate overlay routes. The supported agent-facing text layer is `/content-items` with `kind: "overlay"`. The dashboard calls this editable text layer **Text** in Combined Text.
 
 ### Backgrounds
 
