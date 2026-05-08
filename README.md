@@ -51,6 +51,7 @@ BlitzReels combines an end-user video editor and a developer-first API:
 ## Skills
 
 - `blitzreels` - Core BlitzReels API skill (auth, endpoint discovery, OpenAPI-aware guidance).
+- `blitzreels-cli` - Use `npx blitzreels` as an AI-agent control surface for auth, project/media management, timeline edits, captions, snapshots, and exports.
 - `blitzreels-caption-themes` - Create, edit, preview, and manage custom caption themes via the BlitzReels API (typography, colors, animations, emphasis, layout).
 - `blitzreels-clipping` - Long-form to short-form clipping workflows with transcript-backed suggestions, smart crop, and clip-window captions.
 - `blitzreels-video-editing` - TikTok/Instagram clipping and captioning workflows (timeline, captions, overlays, exports).
@@ -62,6 +63,12 @@ If you publish this folder as its own GitHub repo (recommended), users can insta
 
 ```bash
 npx skills add blitzreels/agent-skills --skill blitzreels
+```
+
+Install the CLI-focused skill:
+
+```bash
+npx skills add blitzreels/agent-skills --skill blitzreels-cli
 ```
 
 List skills in the repo:

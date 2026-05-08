@@ -11,6 +11,7 @@ For focused workflows, install the specialized skills:
 
 - **`blitzreels-clipping`** — Long video to short vertical clipping workflows: ingest → transcript → short suggestions → smart crop or ROI reframing → clip-window captions → export. Includes clipping-specific workflow guidance.
 - **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → editable overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
+- **`blitzreels-cli`** — Shell-first workflows with `npx blitzreels`: browser/device auth, local vs production base URLs, JSON output, media library writes, project management, preview-first edits, snapshots, and exports.
 
 ## Setup
 
