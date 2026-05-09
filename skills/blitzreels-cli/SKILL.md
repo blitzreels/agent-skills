@@ -233,6 +233,17 @@ npx blitzreels@latest timeline delete --project-id PROJECT_ID --timeline-item-id
 
 Use `null` for `--width-px` or `--height-px` when clearing one dimension.
 
+Timeline effects:
+
+```bash
+npx blitzreels@latest effects zoom add --project-id PROJECT_ID --at 9.8 --duration 1.8 --scale-start 1 --scale-end 1.1 --easing easeInOut --json
+npx blitzreels@latest effects zoom update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --scale-end 1.1 --easing easeInOut --duration 1.8 --json
+npx blitzreels@latest effects mask add --project-id PROJECT_ID --settings-json '{"shape":"rounded","size":{"width":0.8,"height":0.8}}' --json
+npx blitzreels@latest effects colorgrade update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --settings-json '{"brightness":1.1,"vignetteEnabled":true}' --json
+```
+
+Use `effects zoom update` for future zoom changes instead of editing the database. Read `project timeline --json` first to find the effect timeline item ID, then verify with `project timeline` or a snapshot.
+
 Caption word editing:
 
 ```bash

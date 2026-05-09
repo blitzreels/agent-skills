@@ -274,9 +274,21 @@ Do not mirror a GET response by sending both `safe_words` and `protected_words`;
 
 | Method | Path | Description |
 |--------|------|-------------|
+| POST | `/projects/{id}/effects/zoom` | Add a zoom effect timeline item |
+| PATCH | `/projects/{id}/effects/zoom/{timelineItemId}` | Update zoom scale, easing, duration, anchor, phase, or translate settings |
+| POST | `/projects/{id}/effects/mask` | Add a mask / shape-crop effect |
+| PATCH | `/projects/{id}/effects/mask/{timelineItemId}` | Update mask settings |
+| POST | `/projects/{id}/effects/colorgrade` | Add a color-grade effect |
+| PATCH | `/projects/{id}/effects/colorgrade/{timelineItemId}` | Update color-grade settings |
 | GET | `/projects/{id}/keyframes?timeline_item_id={itemId}` | List keyframes |
 
-Timeline effect CRUD is not public in the live OpenAPI. Use public overlay/background/motion endpoints where possible, or the dashboard for zoom/mask/color-grade effect editing.
+Prefer the CLI for agent edits:
+
+```bash
+npx blitzreels@latest effects zoom update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --scale-end 1.1 --easing easeInOut --duration 1.8 --json
+```
+
+Do not patch effect rows in the database directly. Fetch context/timeline first, target the effect timeline item ID, apply the public endpoint/CLI command, then verify with context or snapshots.
 
 ---
 
