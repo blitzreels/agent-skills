@@ -1,11 +1,11 @@
 ---
 name: blitzreels-cli
-description: "Use the BlitzReels CLI to let AI coding agents inspect, edit, verify, and export BlitzReels video projects from a shell. Use this whenever the user mentions the BlitzReels CLI, npx blitzreels, agent-driven video editing, local BlitzReels project edits, dashboard project URLs, captions, text overlays, media placement, silence/mistake edits, snapshots, exports, or asks an agent to control BlitzReels without hand-writing REST calls."
+description: "Use the BlitzReels CLI to let AI coding agents inspect, edit, verify, and export BlitzReels video projects from a shell. Use this whenever the user mentions the BlitzReels CLI, a local blitzreels command, agent-driven video editing, local BlitzReels project edits, dashboard project URLs, captions, text overlays, media placement, silence/mistake edits, snapshots, exports, or asks an agent to control BlitzReels without hand-writing REST calls."
 ---
 
 # BlitzReels CLI
 
-Use this skill when an AI coding agent should control BlitzReels through `npx blitzreels` instead of hand-writing REST calls.
+Use this skill when an AI coding agent should control BlitzReels through the installed `blitzreels` command instead of hand-writing REST calls.
 
 The CLI is a creator video-editing control surface. It is not a flat OpenAPI explorer. Prefer it for project-first workflows where the agent needs to browse state, apply edits, verify, and export.
 
@@ -21,12 +21,13 @@ Treat the CLI as an agent control surface, not something the user must memorize.
 
 When introducing the CLI to a user:
 
-1. Explain that `npx blitzreels@latest` lets an agent inspect and edit their BlitzReels project from the shell.
-2. Start with auth only when needed: `auth whoami --json` if a key is already configured, or `auth login` if not.
-3. Tell the user whether you are targeting local or production, especially when using `--base-url http://localhost:3000/api/v1`.
-4. Use read commands before edits so the user sees you are acting on the right project, timeline item, media asset, caption word, or export.
-5. For potentially expensive or irreversible actions, explain the risk and use the CLI's confirmation flags only after the relevant preview or intent is clear.
-6. After edits, summarize the exact visible change and the verification command or snapshot used.
+1. Explain that the installed `blitzreels` command lets an agent inspect and edit their BlitzReels project from the shell.
+2. Do not run package-manager launchers as a fallback. If `blitzreels` is missing, ask the user to download/install the CLI first.
+3. Do not make sign-in the first CLI task. Probe with `projects list --status active --json` first; if that fails because the user is signed out, run `auth login`, then retry the same list command.
+4. Tell the user whether you are targeting local or production, especially when using `--base-url http://localhost:3000/api/v1`.
+5. Use read commands before edits so the user sees you are acting on the right project, timeline item, media asset, caption word, or export.
+6. For potentially expensive or irreversible actions, explain the risk and use the CLI's confirmation flags only after the relevant preview or intent is clear.
+7. After edits, summarize the exact visible change and the verification command or snapshot used.
 
 Good user-facing explanations are concrete:
 
@@ -40,14 +41,26 @@ Avoid dumping the full command list unless the user asks for docs. Prefer giving
 
 Use this loop for most editing tasks:
 
-1. **Authenticate**: `auth whoami --json`
-2. **Orient**: `project inspect --project-id PROJECT_ID --mode full --json` or `project timeline --project-id PROJECT_ID --json`
-3. **Select IDs**: list media, text, captions, or timeline items before editing
-4. **Edit**: run the narrowest command that changes only the intended item
-5. **Verify**: inspect timeline/context or render snapshots
-6. **Report**: tell the user what changed, which IDs were touched, and what remains uncertain
+1. **Require local CLI**: `command -v blitzreels`; if missing, ask the user to download/install it and stop.
+2. **Probe session**: run `blitzreels projects list --status active --json` as the first BlitzReels API call.
+3. **Authenticate only if needed**: if the probe says signed out, run `blitzreels auth login`, then retry the same `projects list`.
+4. **Orient lightly**: prefer `projects get --project-id PROJECT_ID --json` plus `project timeline --project-id PROJECT_ID --json`; use `project inspect --mode full` only when word-level or deep metadata is required.
+5. **Select IDs**: list media, text, captions, or timeline items before editing.
+6. **Edit**: run the narrowest command that changes only the intended item.
+7. **Verify**: inspect timeline/context or render snapshots.
+8. **Report**: tell the user what changed, which IDs were touched, and what remains uncertain.
 
 If the user asks a broad question like "check this video", inspect first, then ask what edit they want unless they already gave a concrete edit request.
+
+## Speed Rules
+
+Prefer fewer, narrower calls over one huge inspect. A full inspect can include large per-word caption payloads and slow down simple editing tasks.
+
+- Run independent reads in parallel when the tool environment supports it: project metadata, timeline, text list, media list, audio list, and asset searches do not depend on each other.
+- Use subagents only for sidecar work that does not block the next edit, such as searching a large media library, auditing caption overlaps, or downloading/render-checking snapshots. Keep the critical edit path in the main agent.
+- Parallelize independent writes only when they touch different item families and do not rely on timeline ordering. Good examples: updating a title text item and adding music. Be more careful with multiple timeline insertions at the same layer/time.
+- After attaching B-roll or any media with transcription, immediately re-read `project timeline --json` before continuing. Media attach can import source captions; delete or move unintended imported captions before adding more layers so overlaps do not compound.
+- Download multiple snapshot URLs in parallel after the snapshot command returns. Do not fetch them one by one unless the environment lacks parallel tool calls.
 
 ## Safety And Consent
 
@@ -65,23 +78,25 @@ When a command fails, first determine whether the failure happened before or aft
 ## Quick Start
 
 ```bash
-npx blitzreels@latest auth login
-npx blitzreels@latest auth whoami --json
-npx blitzreels@latest api docs
-npx blitzreels@latest api spec
+command -v blitzreels
+blitzreels projects list --status active --json
+blitzreels api docs
+blitzreels api spec
 ```
 
-For the scoped package:
+If `projects list` reports that the user is signed out:
 
 ```bash
-npx @blitzreels/cli@latest auth login
+blitzreels auth login
+blitzreels projects list --status active --json
 ```
 
 For local development against a running BlitzReels app:
 
 ```bash
-npx blitzreels@latest auth login --base-url http://localhost:3000/api/v1
-npx blitzreels@latest auth whoami --base-url http://localhost:3000/api/v1 --json
+blitzreels projects list --status active --base-url http://localhost:3000/api/v1 --json
+blitzreels auth login --base-url http://localhost:3000/api/v1 # only if the list command reports signed out
+blitzreels projects list --status active --base-url http://localhost:3000/api/v1 --json
 ```
 
 ## Auth
@@ -89,21 +104,35 @@ npx blitzreels@latest auth whoami --base-url http://localhost:3000/api/v1 --json
 Preferred auth flow:
 
 ```bash
-npx blitzreels@latest auth login
+blitzreels projects list --status active --json
 ```
 
-`auth login` opens the browser, asks the logged-in BlitzReels user to approve a one-time CLI code, then stores the generated API key in macOS Keychain when available or `~/.blitzreels/config.json` as fallback.
+If that reports unauthenticated:
+
+```bash
+blitzreels auth login
+blitzreels projects list --status active --json
+```
+
+Run `auth login` only after a real project-list probe shows the session is unauthenticated. `auth login` opens the browser, asks the logged-in BlitzReels user to approve a one-time CLI code, then stores the generated API key in macOS Keychain when available or `~/.blitzreels/config.json` as fallback.
 
 Remote shells:
 
 ```bash
-npx blitzreels@latest auth login --no-browser
+blitzreels projects list --status active --json
+```
+
+If that reports unauthenticated:
+
+```bash
+blitzreels auth login --no-browser
+blitzreels projects list --status active --json
 ```
 
 Manual key fallback:
 
 ```bash
-npx blitzreels@latest auth set-key --api-key br_live_xxxxx
+blitzreels auth set-key --api-key br_live_xxxxx
 ```
 
 Environment variables:
@@ -129,7 +158,7 @@ Never paste raw API keys into chat, notes, PRDs, eval outputs, or handoff files.
 - Do not guess project, media, caption, or content item IDs. List or inspect first.
 - After writes, verify with `project inspect`, `project timeline`, `project snapshot`, or `project snapshots`.
 - Faulty commands are validated before API calls. Read stderr suggestions and retry the suggested command/flag instead of guessing.
-- Use `npx blitzreels@latest <command> --help` for command-specific usage and flags; this does not require auth.
+- Use `blitzreels <command> --help` for command-specific usage and flags; this does not require auth.
 - With `--json`, failures are structured on stderr as `{ "error": { "code", "message", "suggestions", "usage" } }`.
 
 ## Faulty Command Recovery
@@ -149,30 +178,31 @@ Do not keep retrying slight variations after a validation error. The validator i
 ## Discovery Commands
 
 ```bash
-npx blitzreels@latest auth whoami --json
-npx blitzreels@latest workspace settings get --json
-npx blitzreels@latest projects list --status active --json
-npx blitzreels@latest media list --asset-type video --json
-npx blitzreels@latest media folders list --json
-npx blitzreels@latest project inspect --project-id PROJECT_ID --mode full --json
-npx blitzreels@latest project timeline --project-id PROJECT_ID --json
+blitzreels projects list --status active --json
+blitzreels workspace settings get --json
+blitzreels projects get --project-id PROJECT_ID --json
+blitzreels project timeline --project-id PROJECT_ID --json
+blitzreels media list --asset-type video --json
+blitzreels media list --asset-type audio --json
+blitzreels media folders list --json
+blitzreels project inspect --project-id PROJECT_ID --mode full --json # only when deep metadata is needed
 ```
 
 Docs:
 
 ```bash
-npx blitzreels@latest api docs
-npx blitzreels@latest api spec
+blitzreels api docs
+blitzreels api spec
 ```
 
 ## Project Workflows
 
 ```bash
-npx blitzreels@latest projects create --name "Launch short" --aspect-ratio 9:16 --json
-npx blitzreels@latest projects get --project-id PROJECT_ID --json
-npx blitzreels@latest projects rename --project-id PROJECT_ID --name "New title"
-npx blitzreels@latest projects update --project-id PROJECT_ID --description "New description"
-npx blitzreels@latest projects delete --project-id PROJECT_ID --confirm-delete
+blitzreels projects create --name "Launch short" --aspect-ratio 9:16 --json
+blitzreels projects get --project-id PROJECT_ID --json
+blitzreels projects rename --project-id PROJECT_ID --name "New title"
+blitzreels projects update --project-id PROJECT_ID --description "New description"
+blitzreels projects delete --project-id PROJECT_ID --confirm-delete
 ```
 
 Use plural `projects ...` for project listing and metadata management. Use singular `project ...` for inspecting or previewing one editing project.
@@ -180,15 +210,15 @@ Use plural `projects ...` for project listing and metadata management. Use singu
 ## Media Library Workflows
 
 ```bash
-npx blitzreels@latest media upload --file ./video.mp4 --auto-transcribe true --json
-npx blitzreels@latest media import-youtube --url "https://www.youtube.com/watch?v=..." --json
-npx blitzreels@latest media get --asset-id ASSET_ID --json
-npx blitzreels@latest media rename --asset-id ASSET_ID --name "New media name"
-npx blitzreels@latest media update --asset-id ASSET_ID --description "B-roll" --folder-id FOLDER_ID
-npx blitzreels@latest media move --asset-id ASSET_ID --target-folder-id FOLDER_ID
-npx blitzreels@latest media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --json
-npx blitzreels@latest media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --position-preset top-right --width-px 280 --height-px 120 --animation-preset popIn --layer-index 3 --json
-npx blitzreels@latest media delete --asset-id ASSET_ID --confirm-delete
+blitzreels media upload --file ./video.mp4 --auto-transcribe true --json
+blitzreels media import-youtube --url "https://www.youtube.com/watch?v=..." --json
+blitzreels media get --asset-id ASSET_ID --json
+blitzreels media rename --asset-id ASSET_ID --name "New media name"
+blitzreels media update --asset-id ASSET_ID --description "B-roll" --folder-id FOLDER_ID
+blitzreels media move --asset-id ASSET_ID --target-folder-id FOLDER_ID
+blitzreels media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --json
+blitzreels media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --position-preset top-right --width-px 280 --height-px 120 --animation-preset popIn --layer-index 3 --json
+blitzreels media delete --asset-id ASSET_ID --confirm-delete
 ```
 
 Placement flags for `media attach`:
@@ -202,10 +232,10 @@ Placement flags for `media attach`:
 Folder workflows:
 
 ```bash
-npx blitzreels@latest media folders create --name "B-roll" --icon-type video --json
-npx blitzreels@latest media folders rename --folder-id FOLDER_ID --name "New folder name"
-npx blitzreels@latest media folders update --folder-id FOLDER_ID --parent-folder-id root
-npx blitzreels@latest media folders delete --folder-id FOLDER_ID --confirm-delete
+blitzreels media folders create --name "B-roll" --icon-type video --json
+blitzreels media folders rename --folder-id FOLDER_ID --name "New folder name"
+blitzreels media folders update --folder-id FOLDER_ID --parent-folder-id root
+blitzreels media folders delete --folder-id FOLDER_ID --confirm-delete
 ```
 
 ## Editing Workflows
@@ -213,12 +243,12 @@ npx blitzreels@latest media folders delete --folder-id FOLDER_ID --confirm-delet
 Text overlays:
 
 ```bash
-npx blitzreels@latest text add --project-id PROJECT_ID --text "Hook" --at 0 --duration 4 --json
-npx blitzreels@latest text add --project-id PROJECT_ID --text "serveurs MCP" --at 3 --duration 2 --font-family "Pacifico" --font-size 92 --font-weight 700 --color "#17FFA6" --background-color "#051914" --padding-x 38 --padding-y 18 --border-radius 24 --top "18%" --left "50%" --json
-npx blitzreels@latest text list --project-id PROJECT_ID --json
-npx blitzreels@latest text update --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID --text "New hook"
-npx blitzreels@latest text update --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID --font-family "Pacifico" --font-size 96 --color "#17FFA6"
-npx blitzreels@latest text remove --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID
+blitzreels text add --project-id PROJECT_ID --text "Hook" --at 0 --duration 4 --json
+blitzreels text add --project-id PROJECT_ID --text "serveurs MCP" --at 3 --duration 2 --font-family "Pacifico" --font-size 92 --font-weight 700 --color "#17FFA6" --background-color "#051914" --padding-x 38 --padding-y 18 --border-radius 24 --top "18%" --left "50%" --json
+blitzreels text list --project-id PROJECT_ID --json
+blitzreels text update --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID --text "New hook"
+blitzreels text update --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID --font-family "Pacifico" --font-size 96 --color "#17FFA6"
+blitzreels text remove --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID
 ```
 
 Text style flags work on `text add` and `text update`: `--spec-json`, `--font-family`, `--font-size`, `--font-weight`, `--color`, `--background-color`, `--padding-x`, `--padding-y`, `--border-radius`, `--top`, `--left`, `--text-align`, `--text-shadow`, `--no-background`.
@@ -226,9 +256,9 @@ Text style flags work on `text add` and `text update`: `--spec-json`, `--font-fa
 Timeline transforms:
 
 ```bash
-npx blitzreels@latest timeline transform --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --position-x 72 --position-y 96 --width-px 360 --height-px null --keep-aspect-ratio true --json
-npx blitzreels@latest timeline move --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --at 4.2 --layer-index 5 --json
-npx blitzreels@latest timeline delete --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --auto-pack false --json
+blitzreels timeline transform --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --position-x 72 --position-y 96 --width-px 360 --height-px null --keep-aspect-ratio true --json
+blitzreels timeline move --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --at 4.2 --layer-index 5 --json
+blitzreels timeline delete --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --auto-pack false --json
 ```
 
 Use `null` for `--width-px` or `--height-px` when clearing one dimension.
@@ -236,10 +266,10 @@ Use `null` for `--width-px` or `--height-px` when clearing one dimension.
 Timeline effects:
 
 ```bash
-npx blitzreels@latest effects zoom add --project-id PROJECT_ID --at 9.8 --duration 1.8 --scale-start 1 --scale-end 1.1 --easing easeInOut --json
-npx blitzreels@latest effects zoom update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --scale-end 1.1 --easing easeInOut --duration 1.8 --json
-npx blitzreels@latest effects mask add --project-id PROJECT_ID --settings-json '{"shape":"rounded","size":{"width":0.8,"height":0.8}}' --json
-npx blitzreels@latest effects colorgrade update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --settings-json '{"brightness":1.1,"vignetteEnabled":true}' --json
+blitzreels effects zoom add --project-id PROJECT_ID --at 9.8 --duration 1.8 --scale-start 1 --scale-end 1.1 --easing easeInOut --json
+blitzreels effects zoom update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --scale-end 1.1 --easing easeInOut --duration 1.8 --json
+blitzreels effects mask add --project-id PROJECT_ID --settings-json '{"shape":"rounded","size":{"width":0.8,"height":0.8}}' --json
+blitzreels effects colorgrade update --project-id PROJECT_ID --timeline-item-id EFFECT_TIMELINE_ITEM_ID --settings-json '{"brightness":1.1,"vignetteEnabled":true}' --json
 ```
 
 Use `effects zoom update` for future zoom changes instead of editing the database. Read `project timeline --json` first to find the effect timeline item ID, then verify with `project timeline` or a snapshot.
@@ -247,14 +277,14 @@ Use `effects zoom update` for future zoom changes instead of editing the databas
 Caption word editing:
 
 ```bash
-npx blitzreels@latest captions words list --project-id PROJECT_ID --match-text supabase --json
-npx blitzreels@latest captions words text --project-id PROJECT_ID --word-id WORD_ID --new-text "Supabase"
-npx blitzreels@latest captions words batch-text --project-id PROJECT_ID --updates-json '[{"word_id":"WORD_ID","new_text":"Vercel"}]'
-npx blitzreels@latest captions words style --project-id PROJECT_ID --match-text Supabase --font-family "Pacifico" --font-size 64 --color "#17FFA6" --scale 1.25
-npx blitzreels@latest captions words emphasis --project-id PROJECT_ID --match-text Stripe --emphasis true
-npx blitzreels@latest captions words delete --project-id PROJECT_ID --word-id WORD_ID
-npx blitzreels@latest captions words merge --project-id PROJECT_ID --word-ids WORD_ID_1,WORD_ID_2 --text "MCP servers"
-npx blitzreels@latest captions words split --project-id PROJECT_ID --word-id WORD_ID --words "MCP,servers"
+blitzreels captions words list --project-id PROJECT_ID --match-text supabase --json
+blitzreels captions words text --project-id PROJECT_ID --word-id WORD_ID --new-text "Supabase"
+blitzreels captions words batch-text --project-id PROJECT_ID --updates-json '[{"word_id":"WORD_ID","new_text":"Vercel"}]'
+blitzreels captions words style --project-id PROJECT_ID --match-text Supabase --font-family "Pacifico" --font-size 64 --color "#17FFA6" --scale 1.25
+blitzreels captions words emphasis --project-id PROJECT_ID --match-text Stripe --emphasis true
+blitzreels captions words delete --project-id PROJECT_ID --word-id WORD_ID
+blitzreels captions words merge --project-id PROJECT_ID --word-ids WORD_ID_1,WORD_ID_2 --text "MCP servers"
+blitzreels captions words split --project-id PROJECT_ID --word-id WORD_ID --words "MCP,servers"
 ```
 
 Caption word selectors: `--word-id`, `--word-ids`, `--timeline-item-id`, `--match-text`, or `--match-pattern` (`numbers`, `caps`, `exclamations`). Use `--style-json null` to clear style and `--clear-existing true` to replace existing styles.
@@ -262,24 +292,25 @@ Caption word selectors: `--word-id`, `--word-ids`, `--timeline-item-id`, `--matc
 Audio:
 
 ```bash
-npx blitzreels@latest audio add --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --volume 0.6
+blitzreels audio add --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --volume 0.6
 ```
 
-Caption themes:
+Caption presets and project caption style:
 
 ```bash
-npx blitzreels@latest captions themes list --json
-npx blitzreels@latest captions theme set --project-id PROJECT_ID --theme-id THEME_ID
-npx blitzreels@latest captions theme set-default --theme-id THEME_ID
+blitzreels captions presets list --json
+blitzreels captions preset set --project-id PROJECT_ID --preset-id PRESET_ID
+blitzreels captions style get --project-id PROJECT_ID --json
+blitzreels captions style update --project-id PROJECT_ID --preset-id PRESET_ID --stroke-width 8 --shadow-enabled true --json
 ```
 
 Preview-first destructive edits:
 
 ```bash
-npx blitzreels@latest silence plan --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --json
-npx blitzreels@latest silence apply --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --confirm-preview
-npx blitzreels@latest mistakes plan --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --json
-npx blitzreels@latest mistakes apply --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --confirm-preview
+blitzreels silence plan --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --json
+blitzreels silence apply --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --confirm-preview
+blitzreels mistakes plan --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --json
+blitzreels mistakes apply --project-id PROJECT_ID --timeline-item-id TIMELINE_ITEM_ID --confirm-preview
 ```
 
 Do not apply silence or mistake edits without reviewing the plan output first.
@@ -287,8 +318,8 @@ Do not apply silence or mistake edits without reviewing the plan output first.
 ## Visual Verification
 
 ```bash
-npx blitzreels@latest project snapshot --project-id PROJECT_ID --at 00:03 --json
-npx blitzreels@latest project snapshots --project-id PROJECT_ID --at 00:01,00:03,00:07 --json
+blitzreels project snapshot --project-id PROJECT_ID --at 00:03 --json
+blitzreels project snapshots --project-id PROJECT_ID --at 00:01,00:03,00:07 --json
 ```
 
 Use snapshots before export when editing captions, text overlays, crop/framing, or media placement.
@@ -296,19 +327,21 @@ Use snapshots before export when editing captions, text overlays, crop/framing, 
 ## Export
 
 ```bash
-npx blitzreels@latest exports start --project-id PROJECT_ID --json
-npx blitzreels@latest exports wait --export-id EXPORT_ID --json
-npx blitzreels@latest exports download --export-id EXPORT_ID --output ./short.mp4
+blitzreels exports start --project-id PROJECT_ID --json
+blitzreels exports wait --export-id EXPORT_ID --json
+blitzreels exports download --export-id EXPORT_ID --output ./short.mp4
 ```
 
 Exports can consume credits and take time. Inspect project state before starting one.
 
 ## Safety Checklist
 
-1. Authenticate and confirm environment with `auth whoami --json`.
-2. Inspect the project before editing.
-3. Use `--json` for machine-readable output.
-4. Use plan commands before destructive timeline edits.
-5. Pass `--confirm-preview` only after reviewing a plan.
-6. Pass `--confirm-delete` only for intentional deletes.
-7. Verify with snapshots before export.
+1. Confirm the local `blitzreels` binary exists; if missing, ask the user to install it.
+2. Probe with `projects list --status active --json` before any sign-in command.
+3. Sign in only after the list probe reports unauthenticated, then retry the list probe.
+4. Inspect the project before editing.
+5. Use `--json` for machine-readable output.
+6. Use plan commands before destructive timeline edits.
+7. Pass `--confirm-preview` only after reviewing a plan.
+8. Pass `--confirm-delete` only for intentional deletes.
+9. Verify with snapshots before export.
