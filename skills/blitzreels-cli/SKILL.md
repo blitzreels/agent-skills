@@ -229,6 +229,21 @@ Placement flags for `media attach`:
 - `--animation-preset`: `none`, `fadeIn`, `fadeOut`, `zoomIn`, `slideIn`, `popIn`, `bounce`, `spin`
 - `--layer-index`: z-order, applied with a follow-up timeline move when needed
 
+## Visual Quality And Safe Zones
+
+When a user asks for text, B-roll, logos, or overlays, translate the creative request into the existing CLI/API controls. Do not invent new CLI flags or API fields. If a request is semantic, such as "make the hook big, two lines max, inside the safe zone", explain your interpretation and choose concrete current controls: text spec/style, timeline transform, position, dimensions, and snapshots for verification.
+
+Inform the user about platform safe zones before placing important text or logos. Safe zones are not filters or magic API switches; they are placement constraints that keep content away from TikTok, Instagram, YouTube Shorts, and device UI. If the platform is not specified, assume a conservative universal short-form safe zone and say so. Keep important text, logos, faces, product names, and CTAs away from the top chrome, bottom captions/description area, and right-side action rail.
+
+Use high-quality visual assets:
+
+- Prefer source images/logos at least 2x the final rendered size. For a 280 px wide logo on canvas, prefer a source around 560 px wide or larger.
+- Avoid tiny favicons, social thumbnails, compressed screenshots, watermarked stock previews, and images with baked-in padding unless the padding is intentional.
+- SVGs can render differently across browser, Remotion, and export paths. If an SVG looks low-poly, jagged, clipped, or inconsistent, rasterize it to a high-resolution PNG/WebP before importing, then verify with snapshots.
+- For B-roll, prefer assets that already match the target orientation and resolution. Avoid stretching low-resolution landscape footage into a vertical short unless the user explicitly wants that style.
+
+After inserting visual media, verify the actual frame with `project snapshot` or `project snapshots` at the timestamps where the asset appears. Do not rely only on command success.
+
 Folder workflows:
 
 ```bash
@@ -252,6 +267,8 @@ blitzreels text remove --project-id PROJECT_ID --content-item-id CONTENT_ITEM_ID
 ```
 
 Text style flags work on `text add` and `text update`: `--spec-json`, `--font-family`, `--font-size`, `--font-weight`, `--color`, `--background-color`, `--padding-x`, `--padding-y`, `--border-radius`, `--top`, `--left`, `--text-align`, `--text-shadow`, `--no-background`.
+
+For semantic text requests, document your interpretation in plain language before or after the edit. Example: "I interpreted 'big hook, two lines max, widest inside safe zone' as centered top text, max width inside the universal safe-zone area, with the largest readable font that does not wrap past two lines." Then implement that interpretation with the current text spec/style controls and verify visually.
 
 Timeline transforms:
 

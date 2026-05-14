@@ -45,6 +45,8 @@ When integrating with BlitzReels, do not guess endpoints or request fields. Firs
 6. If the operation returns a `job_id`, poll `/jobs/{job_id}` until complete. If it returns an `export_id`, poll `/exports/{export_id}`.
 7. Verify state with read endpoints after write calls, especially workspace settings and timeline/caption edits.
 
+For creative editing requests, do not invent new API fields to encode every instruction. Use the documented API/CLI controls and the specialized `blitzreels-cli` or `blitzreels-video-editing` skill guidance for safe zones, asset quality, text placement, logos, B-roll, snapshots, and export verification.
+
 ## API Key Handling
 
 - Do not store raw `br_live_...` keys in memory, notes, eval outputs, or handoff files.

@@ -44,6 +44,21 @@ bash scripts/editor.sh export PROJECT_ID --resolution 1080p
 
 After any correction or style copy, verify with `editor.sh context PROJECT_ID full` and preview frames before export. Caption writes can change chunking; the transcript may be correct while the rendered caption blocks need manual split/repair.
 
+## Creative Placement Guidance
+
+When the user gives natural-language layout direction, do not turn every word into a new API argument. Interpret the request, state the interpretation, and implement it using the current documented API fields. For example, "big text that fits in two lines and is as wide as possible inside the safe zone" should become a concrete editable text spec/style and placement choice, not a new REST parameter.
+
+Tell the user which safe zone you are targeting whenever important text, logos, product shots, or CTAs are involved. Safe zones are platform placement constraints, not API filters. If the target platform is missing, use a conservative universal short-form safe zone and mention that assumption. Keep critical content clear of top navigation chrome, bottom caption/description areas, and right-side action rails.
+
+For B-roll and logos, prioritize asset quality before placement:
+
+- Use the highest-quality available asset; avoid thumbnails, favicons, low-bitrate screenshots, and watermarked previews.
+- Prefer source dimensions at least twice the final canvas dimensions for logos and static images.
+- Be cautious with SVG logos. SVGs may rasterize or simplify differently in preview/export paths; if the logo appears jagged, low-poly, clipped, or inconsistent, convert it to a high-resolution PNG/WebP and verify again.
+- Avoid stretching assets across mismatched aspect ratios unless the user explicitly asks for that effect.
+
+Always verify visual placement with preview frames or snapshots after edits that affect text, B-roll, logos, safe zones, or overlays.
+
 ## Scripts
 
 ### `scripts/editor.sh`
