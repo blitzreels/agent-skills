@@ -1,6 +1,6 @@
 ---
 name: blitzreels-cli
-description: "Use the BlitzReels CLI to let AI coding agents inspect, edit, verify, and export BlitzReels video projects from a shell. Use this whenever the user mentions the BlitzReels CLI, a local blitzreels command, agent-driven video editing, local BlitzReels project edits, dashboard project URLs, captions, text overlays, media placement, silence/mistake edits, snapshots, exports, or asks an agent to control BlitzReels without hand-writing REST calls."
+description: "Use the BlitzReels CLI to let AI coding agents complete onboarding, inspect, edit, verify, and export BlitzReels video projects from a shell. Use this whenever the user mentions the BlitzReels CLI, a local blitzreels command, agent-driven onboarding or video editing, local BlitzReels project edits, dashboard project URLs, captions, text overlays, media placement, silence/mistake edits, snapshots, exports, or asks an agent to control BlitzReels without hand-writing REST calls."
 ---
 
 # BlitzReels CLI
@@ -11,7 +11,7 @@ The CLI is a creator video-editing control surface. It is not a flat OpenAPI exp
 
 ## When To Use This Skill
 
-Use this skill for shell-based BlitzReels work: authenticating the CLI, inspecting local or production projects, editing timeline items, adding media/logo/text overlays, adjusting captions, applying preview-first destructive edits, taking snapshots, and exporting.
+Use this skill for shell-based BlitzReels work: authenticating the CLI, completing onboarding brand setup, inspecting local or production projects, editing timeline items, adding media/logo/text overlays, adjusting captions, applying preview-first destructive edits, taking snapshots, and exporting.
 
 If a user gives a dashboard project URL and asks an agent to edit or check the video, use this skill first. Inspect with CLI reads before mutating, and verify writes with timeline/context reads or snapshots.
 
@@ -114,7 +114,7 @@ blitzreels auth login
 blitzreels projects list --status active --json
 ```
 
-Run `auth login` only after a real project-list probe shows the session is unauthenticated. `auth login` opens the browser, asks the logged-in BlitzReels user to approve a one-time CLI code, then stores the generated API key in macOS Keychain when available or `~/.blitzreels/config.json` as fallback.
+Run `auth login` only after a real project-list probe shows the session is unauthenticated. `auth login` opens the browser, shows a one-time CLI code, and waits for the logged-in BlitzReels user to click `Connect CLI`. Only confirm when the browser code matches the terminal code. After confirmation, the CLI stores the generated API key in macOS Keychain when available or `~/.blitzreels/config.json` as fallback.
 
 Remote shells:
 
@@ -128,6 +128,8 @@ If that reports unauthenticated:
 blitzreels auth login --no-browser
 blitzreels projects list --status active --json
 ```
+
+For remote shells, open the printed URL on a browser where you are logged into BlitzReels, verify the one-time code, then click `Connect CLI`. Do not assume that opening the URL alone completes auth.
 
 Manual key fallback:
 
@@ -180,6 +182,7 @@ Do not keep retrying slight variations after a validation error. The validator i
 ```bash
 blitzreels projects list --status active --json
 blitzreels workspace settings get --json
+blitzreels onboarding profile get --json
 blitzreels projects get --project-id PROJECT_ID --json
 blitzreels project timeline --project-id PROJECT_ID --json
 blitzreels media list --asset-type video --json
@@ -194,6 +197,21 @@ Docs:
 blitzreels api docs
 blitzreels api spec
 ```
+
+## Onboarding / Brand Setup
+
+Use onboarding commands when a workspace needs brand context before project creation. They mirror the dashboard onboarding path: website scan, profile review, optional logo import, then completion.
+
+```bash
+blitzreels onboarding scan start --website-url "https://example.com" --business-outcome book_calls --json
+blitzreels onboarding scan get --run-id RUN_ID --json
+blitzreels onboarding profile get --json
+blitzreels onboarding profile update --brand-name "Creator Studio" --protected-words "Brand,Product" --json
+blitzreels onboarding logo import --profile-id PROFILE_ID --replace-existing false --json
+blitzreels onboarding complete --brand-name "Creator Studio" --platforms tiktok,linkedin --save-workspace-icon true --json
+```
+
+Poll `onboarding scan get` until the scan reaches a terminal status before trusting extracted profile fields. Use `--dry-run` on mutating onboarding commands when checking request shape. Keep provider names out of user reports; use public `status`, `profile`, receipts, and `next_actions`.
 
 ## Project Workflows
 

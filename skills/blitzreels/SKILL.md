@@ -1,6 +1,6 @@
 ---
 name: blitzreels
-description: "BlitzReels API umbrella skill: auth, endpoint discovery, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, or carousels."
+description: "BlitzReels API umbrella skill: auth, endpoint discovery, onboarding, public API caveats, and links to specialized BlitzReels skills. Use this whenever a user asks an agent to call BlitzReels, complete BlitzReels onboarding, debug BlitzReels API behavior, verify endpoints, or work with BlitzReels API keys before moving into clipping, video editing, caption themes, or carousels."
 ---
 
 # BlitzReels Skill
@@ -11,7 +11,7 @@ For focused workflows, install the specialized skills:
 
 - **`blitzreels-clipping`** — Long video to short vertical clipping workflows: ingest → transcript → short suggestions → smart crop or ROI reframing → clip-window captions → export. Includes clipping-specific workflow guidance.
 - **`blitzreels-video-editing`** — Video editing workflows: upload media → transcribe → timeline editing → captions → editable overlays → backgrounds → export. Includes `editor.sh` subcommand script, caption/overlay/fill-layer references.
-- **`blitzreels-cli`** — Shell-first workflows with `npx blitzreels`: browser/device auth, local vs production base URLs, JSON output, media library writes, project management, preview-first edits, snapshots, and exports.
+- **`blitzreels-cli`** — Shell-first workflows with `npx blitzreels`: browser/device auth with explicit `Connect CLI` confirmation, local vs production base URLs, JSON output, onboarding brand setup, media library writes, project management, preview-first edits, snapshots, and exports.
 
 ## Setup
 
@@ -46,6 +46,25 @@ When integrating with BlitzReels, do not guess endpoints or request fields. Firs
 7. Verify state with read endpoints after write calls, especially workspace settings and timeline/caption edits.
 
 For creative editing requests, do not invent new API fields to encode every instruction. Use the documented API/CLI controls and the specialized `blitzreels-cli` or `blitzreels-video-editing` skill guidance for safe zones, asset quality, text placement, logos, B-roll, snapshots, and export verification.
+
+## Onboarding / Brand Setup
+
+Use the onboarding API when an agent needs to prepare a workspace before creating videos:
+
+```bash
+curl -X POST https://www.blitzreels.com/api/v1/onboarding/brand-scan \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"website_url":"https://example.com","business_outcome":"book_calls"}'
+
+curl https://www.blitzreels.com/api/v1/onboarding/brand-scans/{run_id} \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY"
+
+curl https://www.blitzreels.com/api/v1/onboarding/brand-profile \
+  -H "Authorization: Bearer $BLITZREELS_API_KEY"
+```
+
+Workflow: start a website brand scan, poll the returned `run_id`, read or patch `/onboarding/brand-profile`, optionally call `/onboarding/logo/import`, then call `/onboarding/complete` with reviewed fields. Keep scan-provider names out of user reports; rely on public status, profile, and `next_actions` fields.
 
 ## API Key Handling
 
@@ -110,7 +129,7 @@ This skill includes a helper script so you don't have to retype headers:
 bash scripts/blitzreels.sh POST /projects '{"name":"My Video","aspect_ratio":"9:16"}'
 ```
 
-## Known Public API Caveats (checked 2026-05-04)
+## Known Public API Caveats (checked 2026-05-24)
 
 These are dogfood findings checked against the live OpenAPI. Re-check OpenAPI before relying on any caveat, because the public API is moving quickly.
 
@@ -118,6 +137,7 @@ These are dogfood findings checked against the live OpenAPI. Re-check OpenAPI be
 - Caption-theme REST routes are now public: `/caption-themes`, `/caption-themes/{themeId}`, `/caption-themes/preview`, duplicate, and set-default are registered.
 - Project metadata update is now public: `PATCH /projects/{projectId}` accepts `name` and `description`.
 - Workspace media asset details use `/workspace/media/assets/{assetId}`. Short guesses like `/assets/{id}`, `/media/{id}`, `/uploads/{id}`, and `/video-sources/{id}` are not registered.
+- Onboarding routes are public: `/onboarding/brand-scan`, `/onboarding/brand-scans/{runId}`, `/onboarding/brand-profile`, `/onboarding/logo/import`, and `/onboarding/complete`. Poll brand scan runs before completing onboarding.
 - Workspace media listing caps `limit` at `100`.
 - Workspace settings `GET` returns both `safeWords` and `protected_words`, but `PATCH /workspace/settings` accepts only one of `safe_words` or `protected_words`.
 - Transcript bulk corrections support single-token `replacements` and same-token-count `phrase_replacements`. They do not support token-count-changing edits such as deleting/fusing words.
