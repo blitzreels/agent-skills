@@ -69,7 +69,8 @@ The clip resource handles transcription, suggestion generation, reframe analysis
     "max_duration_seconds": 75
   },
   "layout": {
-    "layout_mode": "auto"
+    "layout_mode": "auto",
+    "tutorial_stack_ratio": "screen_70_face_30"
   },
   "captions": {
     "enabled": true,
@@ -89,8 +90,16 @@ Overrides:
 - If the user gives an existing asset, use `source_type: "asset"` with `asset_id`.
 - If the user gives exact timestamps, use `selection_mode: "time_range"` with `start_seconds` and `end_seconds`.
 - If the user picks a specific suggestion, use `selection_mode: "suggestion"` with `suggestion_id`.
-- `layout_mode`: `"auto"` (default, evidence-based), `"prefer_split"` (forces dual-speaker split when evidence exists), `"prefer_focus"` (forces single-subject focus-cut).
+- `layout_mode`: `"auto"` (default, evidence-based), `"prefer_split"` (forces dual-speaker split when evidence exists), `"prefer_focus"` (forces single-subject focus-cut), `"prefer_tutorial"` (biases toward screen-share tutorial layouts and sets the content hint to tutorial).
+- `tutorial_stack_ratio`: `"screen_70_face_30"` by default, or `"screen_50_face_50"` when the user wants equal screen/face height. Only affects tutorial facecam stack layouts.
 - `qa_mode`: `"required"` blocks export on QA failure; `"permissive"` allows export with warnings.
+
+Tutorial/livestream screen-share path:
+
+- Use `layout_mode: "prefer_tutorial"` for flattened videos that already contain a large screen-share/browser area plus a small side/corner facecam in the same MP4.
+- Use `tutorial_stack_ratio: "screen_70_face_30"` when screen readability matters most.
+- Use `tutorial_stack_ratio: "screen_50_face_50"` when the user's face/reaction should be equally prominent.
+- Do not use `prefer_tutorial` for podcast/interview two-speaker footage; keep `auto` or `prefer_split`/`prefer_focus` for podcasts.
 
 Caption style defaults:
 
@@ -112,6 +121,7 @@ Read these fields on every `GET /clips/{clip_id}`:
 - `selection.alternatives` — ranked suggestion list with scores (present these to the user for selection)
 - `clip_window` — applied start/end/duration
 - `layout.applied_mode`, `layout.primary_layout`, `layout.fallback_used`, `layout.warnings`
+- `layout.tutorial_stack_ratio` — requested tutorial stack ratio for diagnostics
 - `captions.status`, `captions.clip_window_aware`, `captions.warnings`
 - `qa.status`, `qa.blocking`, `qa.issues`, `qa.preview_urls`, `qa.visual_debug_url`
 - `export.status`, `export.download_url`, `export.short_download_url`
@@ -157,6 +167,7 @@ Repair modes:
 - `"auto"` — recommended default, re-runs reframe planning
 - `"prefer_split"` — when the issue is speaker visibility in a podcast/interview
 - `"prefer_focus"` — when the issue is weak single-subject framing
+- `"prefer_tutorial"` — when a flattened screen-share + facecam clip should use the tutorial stack planner
 - `"move_captions_off_faces"` — when QA flagged caption-on-face overlap
 
 ## Download URLs

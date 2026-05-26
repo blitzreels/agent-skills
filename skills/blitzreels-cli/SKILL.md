@@ -225,6 +225,21 @@ blitzreels projects delete --project-id PROJECT_ID --confirm-delete
 
 Use plural `projects ...` for project listing and metadata management. Use singular `project ...` for inspecting or previewing one editing project.
 
+## Managed Clip Creation
+
+Use `clips create` for long-form to short workflows. For flattened screen-share tutorials or livestreams where the source MP4 already contains a browser/screen area plus a small facecam inset, request the tutorial stack layout at create time:
+
+```bash
+blitzreels clips create --source-type asset --asset-id ASSET_ID --selection-mode time_range --start-seconds 120 --end-seconds 180 --max-duration 60 --layout-mode prefer_tutorial --content-type-hint tutorial --tutorial-stack-ratio screen_70_face_30 --json
+```
+
+Ratios:
+
+- `screen_70_face_30` — default; prioritize screen readability.
+- `screen_50_face_50` — equal screen and face height.
+
+Keep podcast/interview footage on `auto`, `prefer_split`, or `prefer_focus`; `prefer_tutorial` is for screen-share/tutorial sources, not two-speaker podcast composition.
+
 ## Media Library Workflows
 
 ```bash
@@ -314,6 +329,7 @@ Caption word editing:
 ```bash
 blitzreels captions words list --project-id PROJECT_ID --match-text supabase --json
 blitzreels captions words text --project-id PROJECT_ID --word-id WORD_ID --new-text "Supabase"
+blitzreels captions words update --project-id PROJECT_ID --word-id WORD_ID --new-text "Supabase"
 blitzreels captions words batch-text --project-id PROJECT_ID --updates-json '[{"word_id":"WORD_ID","new_text":"Vercel"}]'
 blitzreels captions words style --project-id PROJECT_ID --match-text Supabase --font-family "Pacifico" --font-size 64 --color "#17FFA6" --scale 1.25
 blitzreels captions words emphasis --project-id PROJECT_ID --match-text Stripe --emphasis true
