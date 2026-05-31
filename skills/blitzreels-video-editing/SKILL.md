@@ -183,7 +183,7 @@ Typo-fix workflow: list words with `GET /projects/{id}/captions/words?limit=500`
 | POST | `/projects/{id}/timeline/audio` | Add an existing workspace audio asset |
 | GET | `/projects/{id}/keyframes?timeline_item_id=...` | List item keyframes |
 
-`/timeline/media` is not a background-audio endpoint. It expects:
+`/timeline/media` is not a background-audio endpoint. It attaches a visual media-library asset (image/video) to the timeline. It expects:
 
 ```json
 {
@@ -192,11 +192,13 @@ Typo-fix workflow: list words with `GET /projects/{id}/captions/words?limit=500`
       "asset_id": "media-asset-uuid",
       "start_seconds": 3.2,
       "duration_seconds": 4,
-      "position_preset": "full-screen"
+      "position_preset": "top-half"
     }
   ]
 }
 ```
+
+Placement: prefer `position_preset`. `top-half` fills the full width and covers the top 50% of the frame (use for "top half" / "top 50%" / video-on-top layouts); `bottom-half` is the bottom 50%; `fullscreen` covers the frame; `center` is centered-and-fit and is the default when you omit placement (so a bare insert lands a fit-sized clip in the middle); `top-left` / `top-right` / `bottom-left` / `bottom-right` are small 30%-width corner PIPs, NOT full-width blocks. For fine-tuning use `position_x` / `position_y` (pixels from the CENTER; 0,0 = center, positive y = down, so "top" is negative) and `width_px` / `height_px` (set `width_px` to the canvas width to fill the width). Verify with a preview frame.
 
 It currently supports visual media library assets. For audio, use `POST /projects/{id}/timeline/audio` with an existing workspace audio asset. Do not guess `/audio` or `/music`.
 

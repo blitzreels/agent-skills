@@ -250,17 +250,29 @@ blitzreels media rename --asset-id ASSET_ID --name "New media name"
 blitzreels media update --asset-id ASSET_ID --description "B-roll" --folder-id FOLDER_ID
 blitzreels media move --asset-id ASSET_ID --target-folder-id FOLDER_ID
 blitzreels media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --json
-blitzreels media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --position-preset top-right --width-px 280 --height-px 120 --animation-preset popIn --layer-index 3 --json
+blitzreels media attach --project-id PROJECT_ID --asset-id ASSET_ID --at 0 --duration 4 --position-preset top-right --width-px 280 --height-px 120 --animation-preset popIn --placement-intent overlay --json
 blitzreels media delete --asset-id ASSET_ID --confirm-delete
 ```
 
-Placement flags for `media attach`:
+Placement for `media attach` (also `broll add` and `media overlay update`).
 
-- `--position-preset`: `center`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `full-screen`
-- `--position-x`, `--position-y`: explicit canvas coordinates
-- `--width-px`, `--height-px`, `--scale`, `--opacity`: transform sizing and visibility
-- `--animation-preset`: `none`, `fadeIn`, `fadeOut`, `zoomIn`, `slideIn`, `popIn`, `bounce`, `spin`
-- `--layer-index`: z-order, applied with a follow-up timeline move when needed
+Prefer `--position-preset` — it is the reliable way to place media. Available presets:
+
+- `top-half` — fills the full width and covers the top 50% of the frame. Use for "put the video at the top", "top half", "top 50%", or a video-on-top / captions-below layout.
+- `bottom-half` — fills the full width, bottom 50%.
+- `fullscreen` — covers the whole frame.
+- `center` — centered and scaled to fit inside the frame. This is also what you get when you pass NO placement, so a bare `media attach` drops a fit-sized clip in the middle (rarely what you want for a main clip).
+- `top-left`, `top-right`, `bottom-left`, `bottom-right` — small 30%-width picture-in-picture in that corner. These are PIP thumbnails, NOT full-width blocks. Do not reach for `top-left` when you mean "fill the width at the top" — use `top-half`.
+- For normal B-roll/logo/sticker overlays, omit `--layer-index` and use `--placement-intent overlay`; pass `--layer-index` only when the user asks for an exact layer.
+
+Explicit coordinates are for fine-tuning only and are easy to get wrong:
+
+- `--position-x`, `--position-y` are PIXELS measured from the CENTER of the frame: `0,0` = dead center, positive x = right, positive y = DOWN. "Top" is a NEGATIVE y.
+- `--width-px`, `--height-px` are pixel sizes; to fill the width set `--width-px` to the full canvas width.
+- The canvas width/height are the project resolution (e.g. 1080x1920 for a vertical short; read it from the project). By-hand "top half" on 1080x1920: `--position-x 0 --position-y -480 --width-px 1080 --height-px 960` — but prefer `--position-preset top-half`.
+- `--scale`, `--opacity`: size multiplier and visibility.
+- `--animation-preset`: `none`, `fadeIn`, `fadeOut`, `zoomIn`, `slideIn`, `popIn`, `bounce`, `spin`.
+- `--layer-index`: z-order (lower renders on top), applied with a follow-up timeline move when needed.
 
 ## Visual Quality And Safe Zones
 
