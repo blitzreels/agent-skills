@@ -3,71 +3,17 @@
   "evals": [
     {
       "id": 1,
-      "name": "tiktok-storytelling-ai-images",
-      "prompt": "Make me a 3-slide TikTok carousel about overrated morning routines. Use a storytelling format. I don't have images — please have the API generate them.",
+      "name": "mixed-background-carousel",
+      "prompt": "Create four Instagram slides. Use my hero image and generate the other backgrounds.",
       "files": [],
-      "expected_output": "Agent creates a carousel project with platform=tiktok, then uses scripts/generate.sh with a slides JSON that provides background_prompt for each slide (no background_image_url). Tells the user the response will include a job_id and that they need to poll /jobs/{id} before export. Background prompts follow native-camera rules.",
-      "assertions": [
-        { "id": "uses_generate_sh", "text": "Output invokes scripts/generate.sh (the one-call endpoint), because the user asked the API to generate images." },
-        { "id": "project_type_carousel", "text": "Project is created with project_type=carousel, since /carousels/generate returns 400 otherwise." },
-        { "id": "platform_tiktok", "text": "carousel_settings.platform is tiktok." },
-        { "id": "aspect_9_16", "text": "Aspect ratio is 9:16." },
-        { "id": "background_strategy_valid", "text": "background_strategy is one of: solid, gradient, image, mixed. Value ai_image must not appear anywhere." },
-        { "id": "uses_background_prompts", "text": "Each of the 3 slides in slides[] includes a background_prompt field (since the user has no images)." },
-        { "id": "background_prompts_specific", "text": "Each background_prompt includes at least one native-camera detail (e.g. 'iPhone', 'selfie cam', 'overexposed', 'film grain', 'messy', 'unpolished'). Generic prompts like 'beautiful sunrise' fail." },
-        { "id": "polling_instruction", "text": "Agent explicitly tells the user the response will include a job_id and they must poll /jobs/{job_id} until status=complete before exporting. Polling cadence or timeout mentioned." },
-        { "id": "readability_40_chars", "text": "If slide titles/bodies are drafted, no line exceeds 40 characters and no slide has more than 4 lines." }
-      ]
+      "expected_output": "Uses the live mixed-background contract, polls assets, previews slides, and verifies the ZIP."
     },
     {
       "id": 2,
-      "name": "instagram-5-slide-urls-path-b",
-      "prompt": "Build a 5-slide Instagram carousel (4:5 portrait) announcing a SaaS pricing change. Path B — bake the text into the slides since it's Instagram. URLs: https://cdn.example.com/1.png, https://cdn.example.com/2.png, https://cdn.example.com/3.png, https://cdn.example.com/4.png, https://cdn.example.com/5.png",
+      "name": "existing-images-carousel",
+      "prompt": "Turn these five image URLs into a 4:5 Instagram carousel with editable text.",
       "files": [],
-      "expected_output": "Agent produces a single bash scripts/carousel.sh invocation with --platform instagram, --aspect 4:5, 5 image URLs and 5 titles (Path B bakes text in). Since every background is a user-provided URL, carousel.sh (synchronous, no job polling) is preferable to generate.sh.",
-      "assertions": [
-        { "id": "uses_carousel_sh_when_synchronous", "text": "Agent picks scripts/carousel.sh — every background is already a URL, so the synchronous path is correct. Using generate.sh here is acceptable but less efficient." },
-        { "id": "platform_instagram", "text": "Invocation includes --platform instagram (or equivalent for generate.sh path)." },
-        { "id": "aspect_4_5", "text": "Aspect ratio is 4:5." },
-        { "id": "five_images", "text": "Exactly 5 image URLs are passed through (pipe-delimited for carousel.sh, or 5 slide entries with background_image_url for generate.sh)." },
-        { "id": "five_titles", "text": "Exactly 5 slide texts produced (Path B bakes text in)." },
-        { "id": "readability_40_chars", "text": "No slide title contains a line longer than 40 characters or more than 4 lines." },
-        { "id": "no_marketer_phrases", "text": "Titles avoid banned phrases: 'game-changer', 'revolutionary', 'unlock', 'supercharge', 'elevate', 'discover the power of'." },
-        { "id": "no_unnecessary_polling", "text": "If the agent used generate.sh, it still notes job_id will be null for this case (all URLs, no AI generation) — i.e., no polling needed." }
-      ]
-    },
-    {
-      "id": 3,
-      "name": "photo-dump-tiktok-urls-path-a",
-      "prompt": "make a photo dump for tiktok, 3 slides, i have the urls: https://r2.example.com/a.jpg|https://r2.example.com/b.jpg|https://r2.example.com/c.jpg — path A, i'll type text in tiktok after",
-      "files": [],
-      "expected_output": "Agent produces a carousel.sh call (or equivalent generate.sh with 3 background_image_url slides and no titles/bodies). --platform tiktok, 3 URLs, no baked text. Agent separately drafts the slide text as a list for the user to type natively in TikTok.",
-      "assertions": [
-        { "id": "uses_synchronous_path", "text": "Output uses scripts/carousel.sh (or generate.sh without background_prompts) — no AI generation means no polling needed." },
-        { "id": "platform_tiktok", "text": "Platform tiktok is set." },
-        { "id": "no_baked_text", "text": "Path A: slides are submitted with backgrounds only. carousel.sh: no --titles flag. generate.sh: slides have no 'title' / 'body' fields (or explicitly empty)." },
-        { "id": "three_urls", "text": "Exactly 3 image URLs are passed." },
-        { "id": "native_text_list_provided", "text": "Agent drafts the slide text as a separate list for the user to type manually in TikTok — Path A workflow requires this." },
-        { "id": "background_strategy_valid", "text": "background_strategy (if set) is one of: solid, gradient, image, mixed." }
-      ]
-    },
-    {
-      "id": 4,
-      "name": "mixed-strategy-prompts-and-urls",
-      "prompt": "Build a 4-slide Instagram carousel (4:5) on the theme 'things nobody tells you about running your own saas'. I have a hero image for slide 1 at https://cdn.example.com/hero.png. For the other 3 slides, have the API generate backgrounds. Use Path B — bake the text in.",
-      "files": [],
-      "expected_output": "Agent uses generate.sh with background_strategy=mixed. Slide 1 has background_image_url; slides 2-4 have background_prompt. Titles + bodies provided on all 4 slides (Path B). Agent explains that response will include a job_id because of the 3 AI-generated slides, and polling is required before export.",
-      "assertions": [
-        { "id": "uses_generate_sh", "text": "Output invokes scripts/generate.sh (generate.sh is the only way to mix URLs + AI prompts in one call)." },
-        { "id": "strategy_mixed", "text": "background_strategy is set to 'mixed'." },
-        { "id": "four_slides", "text": "slides array has exactly 4 entries." },
-        { "id": "slide1_is_url", "text": "Slide index 0 has background_image_url set to the hero URL, and no background_prompt." },
-        { "id": "slides_2_to_4_are_prompts", "text": "Slides at indices 1, 2, 3 each have a background_prompt and no background_image_url." },
-        { "id": "path_b_titles", "text": "All 4 slides have title (and optionally body) populated because the user asked for Path B." },
-        { "id": "polling_instruction", "text": "Agent explicitly notes the response includes a job_id (AI generation involved) and polling /jobs/{job_id} until status=complete is required before export." },
-        { "id": "platform_instagram", "text": "Project carousel_settings.platform is instagram." },
-        { "id": "aspect_4_5", "text": "Project aspect_ratio is 4:5." }
-      ]
+      "expected_output": "Uses existing images, adds editable overlays, checks previews, and exports five slides."
     }
   ]
 }

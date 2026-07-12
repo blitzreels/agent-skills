@@ -1,90 +1,37 @@
-# BlitzReels Agent Skills for TikTok & Instagram Clipping and Captioning
+# BlitzReels Agent Skills
 
-<p align="center">
-  <img src="./assets/meta-image.jpg" alt="BlitzReels - Professional videos in just 3 clicks" />
-</p>
+Installable skills for operating and integrating the BlitzReels video platform.
 
-Turn your AI coding agent into a BlitzReels video API operator.
-
-[BlitzReels](https://blitzreels.com) is a full-fledged AI video editing app and developer platform with a public REST API.  
-Teams use BlitzReels to generate, edit, and export production-ready short-form videos with timeline controls, captions, overlays, media management, and automation workflows for TikTok, Instagram Reels, and YouTube Shorts.
-
-This repository packages installable **Agent Skills** (instructions + helper scripts) for AI coding agents (Codex, Claude Code, Cursor, and others), so agents can:
-
-- discover the right BlitzReels API endpoints quickly
-- follow production-ready workflow patterns
-- use the OpenAPI contract instead of guessing payloads
-
-If you want AI agents to build real video workflows against BlitzReels, this repo is the entrypoint.
-
-## What is BlitzReels?
-
-BlitzReels combines an end-user video editor and a developer-first API:
-
-- Full video editing app with timeline, media library, captions, effects, and export controls.
-- AI generation workflows for faceless videos, carousels, and B-roll.
-- API/CLI onboarding workflows for website brand scans, brand profiles, logo import, and workspace setup.
-- Public API + OpenAPI contract for building your own video products and automations.
-- Learn more at https://blitzreels.com
-- API docs: https://blitzreels.com/docs
-- OpenAPI spec: https://blitzreels.com/api/openapi.json
-
-## TikTok and Instagram Clipping & Captioning Workflows
-
-- **TikTok clipping tool**: turn long-form videos into short, publish-ready clips.
-- **Instagram clipping tool**: repurpose podcasts, streams, and courses into Reels.
-- **TikTok/Instagram captioning tool**: auto-captions with word-level timing and 34 built-in caption presets.
-- **Short-form video editor**: timeline editing, safe zones, and HD exports with no watermarks.
-- **3-step workflow**: upload, caption, export in ~3 minutes on average.
-
-## UI Screenshots
-
-| Editor (Dark) | Editor (Light) |
-| --- | --- |
-| ![BlitzReels video editor dark UI](./assets/video-editor-dark.jpg) | ![BlitzReels video editor light UI](./assets/video-editor-light.jpg) |
-
-## LLM Resources (On blitzreels.com)
-
-- `https://blitzreels.com/llms.txt` (concise)
-- `https://blitzreels.com/llms-full.txt` (expanded)
-- `https://blitzreels.com/api/openapi.json` (canonical API contract)
+The skills teach workflow decisions and verification.
+The live CLI contract and OpenAPI specification remain the source of truth for commands and fields.
 
 ## Skills
 
-- `blitzreels` - Core BlitzReels API skill (auth, endpoint discovery, onboarding, OpenAPI-aware guidance).
-- `blitzreels-cli` - Use `npx blitzreels` as an AI-agent control surface for auth, onboarding, project/media management, timeline edits, captions, snapshots, and exports.
-- `blitzreels-caption-themes` - Create, edit, preview, and manage custom caption themes via the BlitzReels API (typography, colors, animations, emphasis, layout).
-- `blitzreels-clipping` - Long-form to short-form clipping workflows with transcript-backed suggestions, smart crop, and clip-window captions.
-- `blitzreels-video-editing` - TikTok/Instagram clipping and captioning workflows (timeline, captions, overlays, exports).
-- `blitzreels-carousels` - Carousel project workflows for short-form platforms (slide + text overlay pipelines).
+- `blitzreels` — integrate or debug the public REST API.
+- `blitzreels-cli` — inspect and edit a workspace from a shell.
+- `blitzreels-clipping` — turn long-form media into managed short clips.
+- `blitzreels-video-editing` — edit an existing project through REST.
+- `blitzreels-caption-themes` — create reusable caption looks.
+- `blitzreels-carousels` — create still-slide social carousels.
 
-## Installation
-
-If you publish this folder as its own GitHub repo (recommended), users can install it via the Skills CLI:
-
-```bash
-npx skills add blitzreels/agent-skills --skill blitzreels
-```
-
-Install the CLI-focused skill:
-
-```bash
-npx skills add blitzreels/agent-skills --skill blitzreels-cli
-```
-
-List skills in the repo:
+## Install
 
 ```bash
 npx skills add blitzreels/agent-skills --list
+npx skills add blitzreels/agent-skills --skill blitzreels-cli
 ```
+
+## Live contracts
+
+- API index: <https://www.blitzreels.com/api/capabilities.json>
+- OpenAPI: <https://www.blitzreels.com/api/openapi.json>
+- API reference: <https://www.blitzreels.com/api/docs.md>
+- CLI guide: <https://www.blitzreels.com/docs/cli.md>
 
 ## Development
 
-Each skill lives in `skills/<skill-name>` and includes:
-
-- `SKILL.md` - agent instructions
-- `scripts/` - helper scripts (optional)
-- `examples/` - usage examples (optional)
+Each skill lives in `skills/<name>/SKILL.md`.
+Keep strategy in skills and exact command or payload schemas in the live contracts above.
 
 ## License
 

@@ -1,13 +1,13 @@
 {
   "name": "blitzreels",
-  "version": "1.0.0",
-  "description": "BlitzReels AI video editing API skills — onboarding, faceless generation, motion graphics, and video editing workflows.",
+  "version": "1.1.0",
+  "description": "Skills for BlitzReels API integration, clipping, captions, carousels, and video editing.",
   "author": {
     "name": "BlitzReels",
-    "url": "https://blitzreels.com"
+    "url": "https://www.blitzreels.com"
   },
-  "homepage": "https://blitzreels.com",
+  "homepage": "https://www.blitzreels.com",
   "repository": "https://github.com/blitzreels/agent-skills",
   "license": "MIT",
-  "keywords": ["video", "editing", "ai", "captions", "motion-graphics", "faceless", "onboarding", "blitzreels"]
+  "keywords": ["video", "editing", "captions", "clipping", "carousel", "blitzreels"]
 }
