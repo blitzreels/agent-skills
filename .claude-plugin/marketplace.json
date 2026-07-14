@@ -1,0 +1,22 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "blitzreels",
+  "description": "AI video editing for agents: clip, caption, edit, and export video through the BlitzReels API, CLI, and MCP server.",
+  "owner": {
+    "name": "BlitzReels",
+    "url": "https://www.blitzreels.com"
+  },
+  "plugins": [
+    {
+      "name": "blitzreels",
+      "source": "./",
+      "description": "Skills and hosted MCP server for BlitzReels: API integration, editing, generation, clipping, caption themes, and carousels.",
+      "author": {
+        "name": "BlitzReels",
+        "url": "https://www.blitzreels.com"
+      },
+      "homepage": "https://www.blitzreels.com/agents",
+      "category": "productivity"
+    }
+  ]
+}

@@ -11,9 +11,9 @@ Keep this skill focused on choosing and verifying the workflow.
 ## Workflow
 
 1. Choose the surface.
-   - Use `blitzreels-cli` to operate a user's workspace from a shell.
+   - Use `blitzreels-editing` to inspect or edit an existing project through CLI or REST.
    - Use REST for application integrations or when the user requests API calls.
-   - Use a specialized skill when the outcome is clipping, editing, caption themes, or carousels.
+   - Use a specialized skill when the outcome is clipping, generation, caption themes, or carousels.
 2. Discover the operation.
    - Start with `https://www.blitzreels.com/api/capabilities.json`.
    - Load only the needed operation from `https://www.blitzreels.com/api/openapi.json`.

@@ -1,0 +1,26 @@
+{
+  "skill_name": "blitzreels-editing",
+  "evals": [
+    {
+      "id": 1,
+      "name": "speech-cut-cli",
+      "prompt": "Use the installed BlitzReels CLI to remove a spoken phrase and keep captions aligned.",
+      "expected_output": "Selects the CLI branch, uses timeline cut with preview, refreshes IDs, and verifies affected frames.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "caption-and-logo-rest",
+      "prompt": "Through REST, fix two caption words and move the logo into the safe area without changing other settings.",
+      "expected_output": "Selects REST, loads bounded state, patches only selected words and placement, then verifies frames.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "cli-missing-rest-fallback",
+      "prompt": "Edit this project, but the blitzreels command is not installed.",
+      "expected_output": "Uses the public REST contract when it supports the edit instead of stopping for CLI installation.",
+      "files": []
+    }
+  ]
+}

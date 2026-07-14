@@ -8,18 +8,29 @@ The live CLI contract and OpenAPI specification remain the source of truth for c
 ## Skills
 
 - `blitzreels` — integrate or debug the public REST API.
-- `blitzreels-cli` — inspect and edit a workspace from a shell.
 - `blitzreels-clipping` — turn long-form media into managed short clips.
-- `blitzreels-video-editing` — edit an existing project through REST.
+- `blitzreels-editing` — edit existing projects through CLI or REST.
+- `blitzreels-generation` — generate AI media and full videos.
 - `blitzreels-caption-themes` — create reusable caption looks.
 - `blitzreels-carousels` — create still-slide social carousels.
 
 ## Install
 
+Claude Code plugin (skills + hosted MCP server over OAuth):
+
+```bash
+/plugin marketplace add blitzreels/agent-skills
+/plugin install blitzreels@blitzreels
+```
+
+Standalone skills for any agent:
+
 ```bash
 npx skills add blitzreels/agent-skills --list
-npx skills add blitzreels/agent-skills --skill blitzreels-cli
+npx skills add blitzreels/agent-skills --skill blitzreels-editing
 ```
+
+`blitzreels-cli` and `blitzreels-video-editing` were merged into `blitzreels-editing`.
 
 ## Live contracts
 

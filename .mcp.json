@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blitzreels": {
+      "type": "http",
+      "url": "https://www.blitzreels.com/api/mcp"
+    }
+  }
+}
