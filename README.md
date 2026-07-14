@@ -30,7 +30,23 @@ npx skills add blitzreels/agent-skills --list
 npx skills add blitzreels/agent-skills --skill blitzreels-editing
 ```
 
+### Migrate renamed skills
+
 `blitzreels-cli` and `blitzreels-video-editing` were merged into `blitzreels-editing`.
+
+For project installations:
+
+```bash
+npx skills remove blitzreels-cli blitzreels-video-editing
+npx skills add blitzreels/agent-skills --skill blitzreels-editing
+```
+
+For global installations:
+
+```bash
+npx skills remove --global blitzreels-cli blitzreels-video-editing
+npx skills add blitzreels/agent-skills --global --skill blitzreels-editing
+```
 
 ## Live contracts
 
