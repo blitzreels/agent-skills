@@ -1,8 +1,8 @@
 {
   "name": "blitzreels",
   "displayName": "BlitzReels",
-  "version": "1.3.0",
-  "description": "Skills and hosted MCP server for BlitzReels: API integration, editing, generation, clipping, caption themes, and carousels.",
+  "version": "2.0.0",
+  "description": "Skills and hosted MCP server for BlitzReels editing, generation, clipping, and carousels.",
   "mcpServers": "./.mcp.json",
   "author": {
     "name": "BlitzReels",

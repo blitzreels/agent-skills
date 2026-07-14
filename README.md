@@ -7,11 +7,9 @@ The live CLI contract and OpenAPI specification remain the source of truth for c
 
 ## Skills
 
-- `blitzreels` — integrate or debug the public REST API.
 - `blitzreels-clipping` — turn long-form media into managed short clips.
 - `blitzreels-editing` — edit existing projects through CLI or REST.
 - `blitzreels-generation` — generate AI media and full videos.
-- `blitzreels-caption-themes` — create reusable caption looks.
 - `blitzreels-carousels` — create still-slide social carousels.
 
 ## Install
@@ -46,6 +44,22 @@ For global installations:
 ```bash
 npx skills remove --global blitzreels-cli blitzreels-video-editing
 npx skills add blitzreels/agent-skills --global --skill blitzreels-editing
+```
+
+### Remove withdrawn skills
+
+`blitzreels` and `blitzreels-caption-themes` are no longer distributed.
+
+For project installations:
+
+```bash
+npx skills remove blitzreels blitzreels-caption-themes
+```
+
+For global installations:
+
+```bash
+npx skills remove --global blitzreels blitzreels-caption-themes
 ```
 
 ## Live contracts
