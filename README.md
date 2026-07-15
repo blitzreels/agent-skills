@@ -1,79 +1,24 @@
 # BlitzReels Agent Skills
 
-Installable skills for operating and integrating the BlitzReels video platform.
+Install BlitzReels video workflows in your AI agent.
 
-The skills teach workflow decisions and verification.
-The live CLI contract and OpenAPI specification remain the source of truth for commands and fields.
+## Agent Skills
 
-## Skills
+Run the installer and choose your agent when prompted:
 
-- `blitzreels-clipping` — turn long-form media into managed short clips.
-- `blitzreels-editing` — edit existing projects through CLI or REST.
-- `blitzreels-generation` — generate AI media and full videos.
-- `blitzreels-carousels` — create still-slide social carousels.
+```bash
+npx skills add blitzreels/agent-skills
+```
 
-## Install
+## Claude Code plugin
 
-Claude Code plugin (skills + hosted MCP server over OAuth):
+Install the skills and hosted BlitzReels MCP server:
 
 ```bash
 /plugin marketplace add blitzreels/agent-skills
 /plugin install blitzreels@blitzreels
 ```
 
-Standalone skills for any agent:
+## ChatGPT
 
-```bash
-npx skills add blitzreels/agent-skills --list
-npx skills add blitzreels/agent-skills --skill blitzreels-editing
-```
-
-### Migrate renamed skills
-
-`blitzreels-cli` and `blitzreels-video-editing` were merged into `blitzreels-editing`.
-
-For project installations:
-
-```bash
-npx skills remove blitzreels-cli blitzreels-video-editing
-npx skills add blitzreels/agent-skills --skill blitzreels-editing
-```
-
-For global installations:
-
-```bash
-npx skills remove --global blitzreels-cli blitzreels-video-editing
-npx skills add blitzreels/agent-skills --global --skill blitzreels-editing
-```
-
-### Remove withdrawn skills
-
-`blitzreels` and `blitzreels-caption-themes` are no longer distributed.
-
-For project installations:
-
-```bash
-npx skills remove blitzreels blitzreels-caption-themes
-```
-
-For global installations:
-
-```bash
-npx skills remove --global blitzreels blitzreels-caption-themes
-```
-
-## Live contracts
-
-- API index: <https://www.blitzreels.com/api/capabilities.json>
-- OpenAPI: <https://www.blitzreels.com/api/openapi.json>
-- API reference: <https://www.blitzreels.com/api/docs.md>
-- CLI guide: <https://www.blitzreels.com/docs/cli.md>
-
-## Development
-
-Each skill lives in `skills/<name>/SKILL.md`.
-Keep strategy in skills and exact command or payload schemas in the live contracts above.
-
-## License
-
-MIT
+[Open BlitzReels in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6952ccb1c6a48191a9d2d07eedb46ad1?q=blitzreels).
