@@ -1,45 +1,48 @@
 ---
 name: blitzreels-clipping
-description: Repurpose long-form media into short clips. Use for selection, reframing, repair, captions, or export.
+description: Create, select, reframe, repair, caption, or export short clips from long-form media.
 ---
 
 # BlitzReels Clipping
 
-Use the managed clip workflow first.
+Use the managed clip **state machine**.
 It owns ingest, transcription, selection, layout, captions, QA, repair, and export sequencing.
 
-## Workflow
+## Steps
 
-1. Confirm the source: a YouTube URL or workspace asset ID.
-2. Confirm selection intent.
-   - Use an explicit time range when the user provides one.
-   - Use a selected suggestion when the user names one.
-   - Use automatic best selection only when the user delegates the choice.
-3. Discover the current contract.
-   - CLI: `blitzreels agent-context --command "clips create" --json`.
-   - REST: inspect the `/clips` operations in OpenAPI.
-4. Create the clip with a caller-generated idempotency key.
-5. Follow `next_action` from the clip response: poll, reselect, repair, export, or stop.
-   Do not infer readiness from asset existence or a generic job status.
-6. When alternatives are available and the user retained the choice, show title, hook, time range, duration, and
-   score; then reselect with the chosen ID or range.
-7. Use tutorial layout only for flattened screen-share plus facecam footage.
-   Keep interview and podcast footage on automatic, split, or focus layouts.
-8. Review QA previews and warnings.
-   Run only the repair action offered by the current state, then follow the returned `next_action` again.
-9. Export only when the clip state permits it and the user has approved a paid render.
-10. Poll the clip or export to a terminal state and verify the output duration, aspect ratio, captions, and framing.
+1. Resolve the source as a YouTube URL or workspace asset ID and resolve selection intent.
+   Use a provided time range or suggestion; use automatic best selection only when choice is delegated.
+   Complete when source and selection mode are explicit.
+2. Discover the current contract with
+   `blitzreels agent-context --command "clips create" --json` or the OpenAPI `/clips` operations.
+   Complete when required inputs, mutation effects, and state fields are known.
+3. Create with a caller-generated idempotency key.
+   Complete when the response contains a clip ID, project ID, state, and `next_action`.
+4. Follow `next_action`: poll, reselect, repair, export, or stop.
+   Complete each transition only when the next response advances or reaches a terminal state.
+5. When the user retained selection choice, present available alternatives with title, hook, range,
+   duration, and score; reselect the approved ID or range.
+   Complete when the chosen selection is persisted.
+6. Validate layout intent.
+   Tutorial layout is for flattened screen-share plus facecam footage.
+   Interview and podcast footage use automatic, split, or focus layouts.
+   Complete when applied layout and content type agree.
+7. Review QA previews and warnings; run only the repair action offered by current state.
+   Complete when QA passes or the state reports a specific unresolved block.
+8. Start a paid export only after user approval and an export-ready state.
+   Poll to terminal and verify output duration, aspect ratio, captions, framing, and download location.
 
 ## Manual branch
 
-Use project media, transcript, timeline, caption, and preview operations only when the managed clip state reports a
-specific block that requires manual control.
+Use low-level project media, transcript, timeline, caption, and preview operations only when managed state reports
+a specific block requiring manual control.
 
-Do not pre-emptively rebuild the managed state machine with low-level endpoints.
+Return to the managed clip after the repair instead of rebuilding its state machine with low-level calls.
 
 ## Completion
 
-Return the clip and project IDs, selected range, applied layout, QA result, warnings, export status, and download
-location.
+Return clip and project IDs, selected range, applied layout, QA result, warnings, export status,
+and download location.
 
-If blocked, return the current `next_action`, blocking reason, and the exact user choice or system state required.
+If blocked, return `next_action`, the exact blocking state, and the user choice or system state required.
+Completion requires a verified terminal output or an explicit managed-state blocker.
