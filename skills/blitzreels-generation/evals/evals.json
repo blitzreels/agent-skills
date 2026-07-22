@@ -5,14 +5,14 @@
       "id": 1,
       "name": "topic-to-full-video",
       "prompt": "Generate a 45-second vertical AI video from this topic, then export it.",
-      "expected_output": "Creates one project idempotently, runs the public faceless job, inspects the timeline, and treats the requested export as approval.",
+      "expected_output": "Drafts narration, creates a project and immutable plan, requests both generation approvals, reviews assets and timeline, then exports and verifies the download.",
       "files": []
     },
     {
       "id": 2,
       "name": "script-preservation",
       "prompt": "Use this exact script to generate a full AI video with the current default voice and style.",
-      "expected_output": "Uses script mode, preserves the script, follows the public job, and reports its generated plan and warnings.",
+      "expected_output": "Preserves the exact narration, creates an immutable plan revision, reports prompts, factual-review notes, and costs, then waits for approval before generating assets.",
       "files": []
     },
     {
@@ -20,6 +20,20 @@
       "name": "standalone-image-contract-gap",
       "prompt": "Generate one standalone AI image in my BlitzReels workspace.",
       "expected_output": "Checks current discovery, avoids private tRPC when no public operation exists, and returns the AI Studio route.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "atomic-shot-production-brief",
+      "prompt": "Generate this exact faceless script. Its visual cue asks for a game UI meter, a map arrow, and two cuts in one scene.",
+      "expected_output": "Preserves narration, creates one atomic generated plate, keeps exact UI and multi-cut work in editor layers, and reviews the final two seconds plus narration joins before export.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "revision-workflow-only",
+      "prompt": "Use the old one-call faceless endpoint to generate this video.",
+      "expected_output": "Refreshes capabilities and uses the current immutable plan, asset review, animation approval, timeline inspection, and export workflow.",
       "files": []
     }
   ]
