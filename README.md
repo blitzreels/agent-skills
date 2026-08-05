@@ -41,6 +41,13 @@ claude plugin install blitzreels@blitzreels
 Use the skills.sh installer for Codex, Cursor, Claude Code, and other Agent Skills-compatible agents.
 Use the Claude Code plugin when you want the skills and MCP server as one managed installation.
 
+## Install in Cursor
+
+Install BlitzReels from the Cursor Marketplace to add the video editing skills and hosted MCP server together.
+Cursor handles BlitzReels authentication through the MCP connection.
+
+Until the marketplace review is complete, install only the skills with the Quickstart command above.
+
 ## Use BlitzReels with ChatGPT
 
 [Open BlitzReels in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6952ccb1c6a48191a9d2d07eedb46ad1?q=blitzreels).
