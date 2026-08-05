@@ -1,6 +1,7 @@
 # AI Video Editing Skills for Claude Code, Codex, Cursor, and ChatGPT
 
 [![skills.sh](https://skills.sh/b/blitzreels/agent-skills)](https://skills.sh/blitzreels/agent-skills)
+[![Smithery](https://smithery.ai/badge/dev-algomax/blitzreels)](https://smithery.ai/servers/dev-algomax/blitzreels)
 
 BlitzReels agent skills teach AI coding agents how to edit videos, turn long-form content into short clips, add
 captions and media, generate AI videos, preview changes, and export finished videos.
