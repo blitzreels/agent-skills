@@ -1,5 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="174" viewBox="0 0 240 174" role="img" aria-label="BlitzReels logomark">
-  <path fill="#0E8062" d="M85 0h155v174h-95L0 0h85Z" opacity="0.85" />
-  <path fill="#17FFA6" d="M0 0h215v174h-70L0 0Z" />
-  <path fill="#15D990" d="M55 0h160v87h-46L98 0H55Z" opacity="0.62" />
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="BlitzReels logomark">
+  <rect width="512" height="512" rx="96" fill="#0A1713" />
+  <g transform="translate(88 134) scale(1.4)">
+    <path fill="#0E8062" d="M85 0h155v174h-95L0 0h85Z" opacity="0.85" />
+    <path fill="#17FFA6" d="M0 0h215v174h-70L0 0Z" />
+    <path fill="#15D990" d="M55 0h160v87h-46L98 0H55Z" opacity="0.62" />
+  </g>
 </svg>
