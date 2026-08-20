@@ -1,8 +1,8 @@
 {
   "name": "blitzreels",
   "displayName": "BlitzReels",
-  "version": "2.0.0",
-  "description": "Skills and hosted MCP server for BlitzReels editing, generation, clipping, and carousels.",
+  "version": "2.1.0",
+  "description": "Skills and hosted MCP server for BlitzReels editing, generation, clipping, X-to-video workflows, and carousels.",
   "mcpServers": "./.mcp.json",
   "author": {
     "name": "BlitzReels",
@@ -11,5 +11,5 @@
   "homepage": "https://www.blitzreels.com",
   "repository": "https://github.com/blitzreels/agent-skills",
   "license": "MIT",
-  "keywords": ["video", "editing", "captions", "clipping", "carousel", "blitzreels"]
+  "keywords": ["video", "editing", "captions", "clipping", "carousel", "x-to-video", "blitzreels"]
 }

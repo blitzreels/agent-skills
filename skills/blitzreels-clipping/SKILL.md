@@ -1,6 +1,6 @@
 ---
 name: blitzreels-clipping
-description: Create, select, reframe, repair, caption, or export short clips from long-form media.
+description: Create, select, reframe, repair, caption, or export short clips from long-form media, including supported YouTube, Instagram, TikTok, X, Facebook, Google Drive, and direct video URLs.
 ---
 
 # BlitzReels Clipping
@@ -10,15 +10,16 @@ It owns ingest, transcription, selection, layout, captions, QA, repair, and expo
 
 ## Steps
 
-1. Resolve the source as a YouTube URL or workspace asset ID and resolve selection intent.
+1. Resolve the source as a supported public video URL or workspace asset ID and resolve selection intent.
    Use a provided time range or suggestion; use automatic best selection only when choice is delegated.
    Complete when source and selection mode are explicit.
-2. Discover the current contract with
-   `blitzreels agent-context --command "clips create" --json` or the OpenAPI `/clips` operations.
+2. Choose the available surface. Prefer the bundled MCP `clips_create` tool; otherwise discover the current contract
+   with `blitzreels agent-context --command "clips create" --json` or the OpenAPI `/clips` operations.
    Complete when required inputs, mutation effects, and state fields are known.
 3. Create with a caller-generated idempotency key.
    Complete when the response contains a clip ID, project ID, state, and `next_action`.
-4. Follow `next_action`: poll, reselect, repair, export, or stop.
+4. For MCP batches, follow `batch.polling` with `clips_get`. For managed API clips, follow `next_action`: poll,
+   reselect, repair, export, or stop.
    Complete each transition only when the next response advances or reaches a terminal state.
 5. When the user retained selection choice, present available alternatives with title, hook, range,
    duration, and score; reselect the approved ID or range.
