@@ -9,6 +9,9 @@ captions and media, generate AI videos, preview changes, and export finished vid
 They work with the BlitzReels CLI, REST API, and hosted MCP server, so your agent can operate a real video editor
 instead of producing instructions for you to follow manually.
 
+Read the [video editing MCP server guide](docs/video-editing-mcp-server.md) for the agent-first workflow,
+transport choices, capability checklist, and example prompts.
+
 ## Install in Grok
 
 Install directly from the official BlitzReels GitHub organization:
