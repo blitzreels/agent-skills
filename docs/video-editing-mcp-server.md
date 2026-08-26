@@ -37,8 +37,9 @@ a local FFmpeg server for mechanical transforms, and a generation server for new
 ## BlitzReels as a hosted video editing MCP server
 
 [BlitzReels](https://www.blitzreels.com/mcp) exposes a hosted Streamable HTTP endpoint at
-`https://www.blitzreels.com/api/mcp`. OAuth protects private workspaces, and the public
-[server card](https://www.blitzreels.com/.well-known/mcp/server-card.json) currently describes 58 tools.
+`https://www.blitzreels.com/api/mcp`. OAuth protects private workspaces. The public
+[server card](https://www.blitzreels.com/.well-known/mcp/server-card.json) supports discovery, and the canonical
+server descriptor registry currently contains 50 tools.
 
 The tool surface covers project and media inspection, transcripts, clip creation, captions, timeline edits,
 media uploads, AI generation, story kits, export validation, render start, and export status. The server is also
