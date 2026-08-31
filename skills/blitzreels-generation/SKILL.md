@@ -35,6 +35,8 @@ Full faceless video generation is public; standalone AI Studio media may still r
 - Full video from a topic, script, or production brief: use the faceless plan and asset-approval workflow.
 - Standalone media: use a public operation when discovery exposes it.
   Otherwise return `/dashboard/ai-studio` and name the missing public capability.
+- CLI generation: read [`references/cli-generation.md`](references/cli-generation.md) before choosing a model or
+  submitting a prompt.
 - Carousel: use `blitzreels-carousels`.
 - Long-form source repurposing: use `blitzreels-clipping`.
 

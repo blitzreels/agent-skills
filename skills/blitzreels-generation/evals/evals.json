@@ -35,6 +35,13 @@
       "prompt": "Use the old one-call faceless endpoint to generate this video.",
       "expected_output": "Refreshes capabilities and uses the current immutable plan, asset review, animation approval, timeline inspection, and export workflow.",
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "cli-multiline-prompt-and-pricing",
+      "prompt": "Use the BlitzReels CLI to generate a video from my multiline shot prompt. Show the current credit rate before submitting it.",
+      "expected_output": "Loads live video credit pricing, preserves the authored line breaks in one quoted --prompt value, and upgrades an older CLI before resubmitting the original prompt.",
+      "files": []
     }
   ]
 }
