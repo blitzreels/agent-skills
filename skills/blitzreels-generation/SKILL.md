@@ -1,6 +1,6 @@
 ---
 name: blitzreels-generation
-description: Generate AI media with BlitzReels. Use for faceless videos, images, clips, voiceovers, music, SFX, or authored briefs.
+description: Generate AI media with BlitzReels. Use for faceless videos, paced Seedance I2V ads, images, clips, voiceovers, music, SFX, or authored briefs.
 ---
 
 # BlitzReels Generation
@@ -37,6 +37,8 @@ Full faceless video generation is public; standalone AI Studio media may still r
   Otherwise return `/dashboard/ai-studio` and name the missing public capability.
 - CLI generation: read [`references/cli-generation.md`](references/cli-generation.md) before choosing a model or
   submitting a prompt.
+- Spoken standalone I2V (paced Seedance ads): after the CLI pricing read, continue in
+  [`references/standalone-video.md`](references/standalone-video.md).
 - Carousel: use `blitzreels-carousels`.
 - Long-form source repurposing: use `blitzreels-clipping`.
 

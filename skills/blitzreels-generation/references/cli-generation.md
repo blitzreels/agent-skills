@@ -29,3 +29,8 @@ Use live CLI discovery for model limits and credit rates.
    same multiline prompt.
 
    This step is complete when the request preserves the original prompt and its line breaks.
+
+3. When the prompt has spoken dialogue, read [`standalone-video.md`](standalone-video.md) before choosing `--duration`
+   or `--end-frame`.
+
+   This step is complete when duration matches spoken seconds and the CTA path is chosen from that file.
