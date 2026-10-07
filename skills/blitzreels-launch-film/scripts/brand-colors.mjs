@@ -3,7 +3,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { lookup } from "node:dns/promises";
+import { lookup as dnsLookup } from "node:dns";
+import http from "node:http";
+import https from "node:https";
+import { BlockList, isIP } from "node:net";
 import { parseArgs } from "./render.mjs";
 
 const IMAGE = /\.(png|jpe?g|webp|svg)$/i;
@@ -71,22 +74,51 @@ const fromImages = async ({ files, sharp }) => {
   }));
 };
 
-const PRIVATE = [/^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^169\.254\./, /^0\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, /^::1$/, /^::$/, /^f[cd]/i, /^fe80/i, /^::ffff:(127|10|192\.168|169\.254)\./i];
+const BLOCKED = new BlockList();
+for (const [net, bits] of [["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4]]) BLOCKED.addSubnet(net, bits, "ipv4");
+for (const [net, bits] of [["::", 128], ["::1", 128], ["64:ff9b::", 96], ["100::", 64], ["2001:db8::", 32], ["2002::", 16], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8]]) BLOCKED.addSubnet(net, bits, "ipv6");
 
-/** Fetches a public http(s) page only: no private or loopback hosts (checked on every redirect), 3 MB cap, 15 s timeout. */
-const safeGet = async ({ url, hops }) => {
-  const u = new URL(url);
-  if (!["http:", "https:"].includes(u.protocol)) throw new Error(`only http(s) URLs: ${url}`);
-  const addrs = await lookup(u.hostname.replace(/^\[|\]$/g, ""), { all: true });
-  if (!addrs.length || addrs.some((a) => PRIVATE.some((re) => re.test(a.address)))) throw new Error(`refusing private or local address: ${u.hostname}`);
-  const res = await fetch(u, { redirect: "manual", signal: AbortSignal.timeout(15000), headers: { "user-agent": "Mozilla/5.0 launch-film" } });
-  if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
-    if (hops <= 0) throw new Error("too many redirects");
-    return safeGet({ url: new URL(res.headers.get("location"), u).href, hops: hops - 1 });
-  }
-  if (Number(res.headers.get("content-length") ?? 0) > 3 * 1024 * 1024) throw new Error(`too large: ${u.href}`);
-  return (await res.text()).slice(0, 3 * 1024 * 1024);
+const publicAddress = ({ address, family }) => !BLOCKED.check(address, family === 6 || family === "IPv6" ? "ipv6" : "ipv4");
+
+/** dns lookup that only ever hands the socket a public address, so the checked IP is the one connected to (no rebinding window). */
+const safeLookup = (hostname, options, callback) => {
+  dnsLookup(hostname, { all: true }, (err, addrs) => {
+    if (err) return callback(err);
+    const ok = addrs.filter(publicAddress);
+    if (!ok.length || ok.length !== addrs.length) return callback(new Error(`refusing private or local address: ${hostname}`));
+    if (options && options.all) return callback(null, ok);
+    callback(null, ok[0].address, ok[0].family);
+  });
 };
+
+/** Fetches a public http(s) page only: every connection and redirect goes through safeLookup, 3 MB cap, 15 s timeout. */
+const safeGet = ({ url, hops }) =>
+  new Promise((resolve, reject) => {
+    const u = new URL(url);
+    if (!["http:", "https:"].includes(u.protocol)) return reject(new Error(`only http(s) URLs: ${url}`));
+    const bare = u.hostname.replace(/^\[|\]$/g, "");
+    if (isIP(bare) && !publicAddress({ address: bare, family: isIP(bare) })) {
+      return reject(new Error(`refusing private or local address: ${u.hostname}`));
+    }
+    const req = (u.protocol === "https:" ? https : http).get(u, { lookup: safeLookup, timeout: 15000, headers: { "user-agent": "Mozilla/5.0 launch-film" } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        if (hops <= 0) return reject(new Error("too many redirects"));
+        return resolve(safeGet({ url: new URL(res.headers.location, u).href, hops: hops - 1 }));
+      }
+      const chunks = [];
+      let size = 0;
+      res.on("data", (c) => {
+        size += c.length;
+        if (size > 3 * 1024 * 1024) return req.destroy(new Error(`too large: ${u.href}`));
+        chunks.push(c);
+      });
+      res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      res.on("error", reject);
+    });
+    req.on("timeout", () => req.destroy(new Error(`timeout: ${u.href}`)));
+    req.on("error", reject);
+  });
 
 const fromSite = async ({ url }) => {
   const found = new Map();
