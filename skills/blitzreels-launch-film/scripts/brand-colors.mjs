@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { lookup } from "node:dns/promises";
 import { parseArgs } from "./render.mjs";
 
 const IMAGE = /\.(png|jpe?g|webp|svg)$/i;
@@ -70,6 +71,23 @@ const fromImages = async ({ files, sharp }) => {
   }));
 };
 
+const PRIVATE = [/^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^169\.254\./, /^0\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, /^::1$/, /^::$/, /^f[cd]/i, /^fe80/i, /^::ffff:(127|10|192\.168|169\.254)\./i];
+
+/** Fetches a public http(s) page only: no private or loopback hosts (checked on every redirect), 3 MB cap, 15 s timeout. */
+const safeGet = async ({ url, hops }) => {
+  const u = new URL(url);
+  if (!["http:", "https:"].includes(u.protocol)) throw new Error(`only http(s) URLs: ${url}`);
+  const addrs = await lookup(u.hostname.replace(/^\[|\]$/g, ""), { all: true });
+  if (!addrs.length || addrs.some((a) => PRIVATE.some((re) => re.test(a.address)))) throw new Error(`refusing private or local address: ${u.hostname}`);
+  const res = await fetch(u, { redirect: "manual", signal: AbortSignal.timeout(15000), headers: { "user-agent": "Mozilla/5.0 launch-film" } });
+  if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+    if (hops <= 0) throw new Error("too many redirects");
+    return safeGet({ url: new URL(res.headers.get("location"), u).href, hops: hops - 1 });
+  }
+  if (Number(res.headers.get("content-length") ?? 0) > 3 * 1024 * 1024) throw new Error(`too large: ${u.href}`);
+  return (await res.text()).slice(0, 3 * 1024 * 1024);
+};
+
 const fromSite = async ({ url }) => {
   const found = new Map();
   const add = ({ hex, weight, source }) => {
@@ -80,7 +98,7 @@ const fromSite = async ({ url }) => {
     cur.weight += weight;
     found.set(key, cur);
   };
-  const get = async (u) => (await fetch(u, { headers: { "user-agent": "Mozilla/5.0 launch-film" } })).text();
+  const get = (u) => safeGet({ url: u, hops: 3 });
   const html = await get(url);
   for (const m of html.matchAll(/<meta[^>]+name=["']theme-color["'][^>]+content=["'](#[0-9a-f]{3,6})["']/gi)) add({ hex: m[1], weight: 50, source: "meta theme-color" });
   const sheets = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/gi)].map((m) => new URL(m[1], url).href).slice(0, 4);

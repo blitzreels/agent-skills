@@ -69,16 +69,28 @@ export async function studioDeps(studio) {
   return { playwright: await load("playwright"), sharp: await load("sharp") };
 }
 
+const SERVED = [/^src\//, /^assets\//, /^(grid|film\.config)\.json$/];
+
+/** Local page server: loopback only, exact Host (no DNS rebinding), and only the film's own files (never .env or audio keys). */
 function serve(root) {
+  let host = "";
   const server = http.createServer((req, res) => {
-    const url = new URL(req.url, "http://localhost");
-    const file = path.join(root, decodeURIComponent(url.pathname));
-    if (!file.startsWith(root)) {
+    let rel;
+    try {
+      rel = path.relative(root, path.resolve(root, `.${decodeURIComponent(new URL(req.url, "http://127.0.0.1").pathname)}`)).split(path.sep).join("/");
+    } catch {
+      rel = "..";
+    }
+    const allowed = req.headers.host === host && !rel.startsWith("..") && !path.isAbsolute(rel) && !rel.split("/").some((p) => p.startsWith(".")) && SERVED.some((re) => re.test(rel));
+    if (!allowed) {
       res.writeHead(403).end();
       return;
     }
+    const file = path.join(root, rel);
+    const realRoot = fs.realpathSync(root);
     fs.stat(file, (err, st) => {
-      if (err || !st.isFile()) {
+      const real = err ? "" : fs.realpathSync(file);
+      if (err || !st.isFile() || path.relative(realRoot, real).startsWith("..")) {
         res.writeHead(404).end();
         return;
       }
@@ -86,7 +98,12 @@ function serve(root) {
       fs.createReadStream(file).pipe(res);
     });
   });
-  return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve({ server, port: server.address().port })));
+  return new Promise((resolve) =>
+    server.listen(0, "127.0.0.1", () => {
+      host = `127.0.0.1:${server.address().port}`;
+      resolve({ server, port: server.address().port });
+    }),
+  );
 }
 
 // ------------------------------------------------------------------ machine-wide render lock

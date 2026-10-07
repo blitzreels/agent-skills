@@ -98,7 +98,9 @@ const generate = async ({ args, studio, grid, config, kind, provider, out }) => 
     return { model: args.model ?? "blitzreels default", raw: run({ cmd: "blitzreels", args: [...cli, ...base] }).trim().slice(-400) };
   }
   if (kind === "music") {
-    const plan = args.plan ? readJson(path.resolve(studio, String(args.plan))) : planFromGrid({ grid, prompt });
+    const planPath = args.plan ? path.resolve(studio, String(args.plan)) : "";
+    if (planPath && path.relative(studio, planPath).startsWith("..")) throw new Error("--plan must be a file inside the studio");
+    const plan = planPath ? readJson(planPath) : planFromGrid({ grid, prompt });
     fs.writeFileSync(out.replace(/\.mp3$/, ".plan.json"), JSON.stringify(plan, null, 2));
     await eleven({ endpoint: "/v1/music?output_format=mp3_48000_320", body: { composition_plan: plan, model_id: "music_v2" }, out });
     return { model: "music_v2", plan: true };
@@ -118,6 +120,7 @@ const main = async () => {
   const args = parseArgs(process.argv.slice(2));
   const usage = "usage: generate.mjs --studio DIR --provider blitzreels|elevenlabs --kind image|video|music|sound|voice --name slug --prompt TEXT [--duration s] [--aspect 16:9] [--model ID] [--voice-id ID] [--plan plan.json] [--source-image FILE] [--yes]";
   if (!args.studio || !args.provider || !args.kind || !args.name) throw new Error(usage);
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(String(args.name))) throw new Error(`--name must be a slug (lowercase letters, digits, dashes): "${args.name}"`);
   const provider = String(args.provider);
   const kind = String(args.kind);
   if (!KINDS[provider]?.includes(kind)) throw new Error(`${provider} can't generate ${kind} here (supported: ${JSON.stringify(KINDS)})`);
