@@ -10,7 +10,7 @@
     {
       "name": "blitzreels",
       "source": "./",
-      "description": "Skills and hosted MCP server for BlitzReels editing, generation, clipping, X-to-video workflows, and carousels.",
+      "description": "Skills and hosted MCP server for BlitzReels editing, generation, clipping, X-to-video workflows, carousels, and code-rendered launch films.",
       "author": {
         "name": "BlitzReels",
         "url": "https://www.blitzreels.com"
