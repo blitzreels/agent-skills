@@ -1,0 +1,25 @@
+{
+  "title": "Acme",
+  "slug": "acme",
+  "fps": 60,
+  "bpm": 128,
+  "bars": 4,
+  "key": "A minor",
+  "look": "void",
+  "accent": "#5b8cff",
+  "fonts": {
+    "display": "Geist",
+    "mono": "Geist Mono"
+  },
+  "formats": {
+    "16x9": [
+      1920,
+      1080
+    ],
+    "9x16": [
+      1080,
+      1920
+    ]
+  },
+  "palette": {}
+}

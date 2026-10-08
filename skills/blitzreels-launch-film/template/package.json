@@ -1,0 +1,15 @@
+{
+  "name": "launch-film-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node \"$(cat .skill-path)/scripts/render.mjs\" --studio . --quality final",
+    "draft": "node \"$(cat .skill-path)/scripts/render.mjs\" --studio . --quality draft",
+    "sheet": "node \"$(cat .skill-path)/scripts/sheet.mjs\" --studio .",
+    "report": "node \"$(cat .skill-path)/scripts/report.mjs\" --studio ."
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "sharp": "0.35.5"
+  }
+}

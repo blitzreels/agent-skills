@@ -1,0 +1,25 @@
+{
+  "bpm": 128,
+  "bars": 4,
+  "fps": 60,
+  "key": "A minor",
+  "gates": [{ "beat": 12, "frames": 10 }],
+  "cues": [
+    { "id": "hook-impact", "beat": 0, "sfx": "impact", "pan": 0 },
+    { "id": "word-1", "beat": 0.5, "sfx": "blip", "note": 69, "pan": -0.3 },
+    { "id": "word-2", "beat": 1, "sfx": "blip", "note": 72, "pan": 0 },
+    { "id": "word-3", "beat": 1.5, "sfx": "blip", "note": 76, "pan": 0.3 },
+    { "id": "to-product", "beat": 3.75, "sfx": "whoosh", "pan": 0 },
+    { "id": "card-land", "beat": 4, "sfx": "settle", "note": 40, "pan": 0 },
+    { "id": "row-1", "beat": 5, "sfx": "marimba", "note": 69, "pan": -0.2 },
+    { "id": "row-2", "beat": 5.25, "sfx": "marimba", "note": 72, "pan": 0 },
+    { "id": "row-3", "beat": 5.5, "sfx": "marimba", "note": 76, "pan": 0.2 },
+    { "id": "step-1", "beat": 7, "sfx": "slot", "note": 69, "pan": -0.2 },
+    { "id": "step-2", "beat": 7.5, "sfx": "slot", "note": 72, "pan": 0 },
+    { "id": "step-3", "beat": 8, "sfx": "slot", "note": 76, "pan": 0.2 },
+    { "id": "riser", "beat": 10, "sfx": "riser", "length": 1.8, "pan": 0 },
+    { "id": "logo-hit", "beat": 12, "sfx": "logo", "pan": 0 },
+    { "id": "wordmark", "beat": 12.5, "sfx": "letterpress", "note": 45, "pan": 0 },
+    { "id": "cta", "beat": 13.5, "sfx": "shimmer", "pan": 0 }
+  ]
+}

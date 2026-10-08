@@ -1,7 +1,7 @@
 {
   "name": "blitzreels",
   "displayName": "BlitzReels",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Create short clips, edit videos, add captions, build carousels, and export with BlitzReels.",
   "author": {
     "name": "BlitzReels"
@@ -14,7 +14,9 @@
     "editing",
     "captions",
     "clipping",
-    "carousels"
+    "carousels",
+    "launch-video",
+    "motion-graphics"
   ],
   "logo": "assets/logo.svg",
   "mcpServers": "mcp.cursor.json"
