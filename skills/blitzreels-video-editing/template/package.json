@@ -1,0 +1,24 @@
+{
+  "name": "blitzreels-video-edit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "edit": "node scripts/cli.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "2.64.0",
+    "@remotion/bundler": "4.0.541",
+    "@remotion/cli": "4.0.541",
+    "@remotion/google-fonts": "4.0.541",
+    "@remotion/media": "4.0.541",
+    "@remotion/renderer": "4.0.541",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.541"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "typescript": "5.9.3"
+  }
+}
